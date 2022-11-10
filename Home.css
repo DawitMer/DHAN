@@ -2,14 +2,19 @@
     background-color: navy;
     float: left;
     padding: 15px   ;
+    margin-bottom: 100%;
 }
 
 .main{
-    align-self: center;
+    align-items: center;
     background-color: lightgray;
     padding: 15px;
 }
 
 body{
     background-color: white;
+}
+
+h3{
+    align-self: center;
 }
