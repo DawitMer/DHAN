@@ -25,8 +25,11 @@ h3{
     align-self: center;
 }
 
-.main button{
+.main div{
+    align-content: center;
     align-self: center;
+    text-align-last: center;
+    
 }
 
 .sidebar h3{
