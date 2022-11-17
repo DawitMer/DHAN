@@ -20,7 +20,20 @@
 <!--This div is for the side bar of the page with the form-->
 <div id="sidebar" class="sidebar">
 <h3>Search a Symptom</h3>
-<input type="text" placeholder="Search Symptom...">
+<input type="text" placeholder="Search Symptom..." style="width: 200px;">
+<div>
+ <br><br>
+<input type="checkbox" name="symptoms" value="Headache"/> Headache
+<input type="checkbox" name="symptoms" value="Sore throat"/> Sore throat <br>
+<input type="checkbox" name="symptoms" value="Nasal Congestion"/> Nasal Congestion <br>
+<input type="checkbox" name="symptoms" value="Dry Cough"/> Dry Cough 
+<input type="checkbox" name="symptoms" value="Fever"/> Fever <br>
+<input type="checkbox" name="symptoms" value="Nausea"/> Nausea
+<input type="checkbox" name="symptoms" value="Excess Mucus"/> Excess Mucus <br>
+<input type="checkbox" name="symptoms" value="Diarrhea"/> Diarrhea 
+<br><br><br>
+<input type="submit">
+</div>
 </div>
 
 <!--This is the main page where the diseases will show up-->
@@ -32,13 +45,56 @@
 <p>
     <div>
         <h3>Search a Disease</h3>
-         <input type="text" placeholder="Search Disease...">
+         <input type="text" placeholder="Search Disease..." style="width: 400px;">
          <br><br>
          <!--Buttons for the main disease types-->
-         <button>Brain</button>
-         <button>Heart</button>
-         <button>Throat</button>
-         <button>COVID 19</button>
+         <div class="navbar">
+         <div class="dropdown">
+             <button class="dropbtn">Brain</button>
+                 <div class="dropdown-content">
+                    <a href="#">Epilepsy</a>
+                    <a href="#">Aneurysm</a>
+                    <a href="#">Alzeihmer's</a>
+                    <a href="#">Dementia</a>
+                    <a href="#">Meningitis</a>
+                 </div>
+         </div>
+         <div class="dropdown2">
+             <button class="dropbtn2">Heart</button>
+                 <div class="dropdown-content2">
+                    <a href="#">Coronary Artery Disease</a>
+                    <a href="#">Heart Attack</a>
+                    <a href="#">Stroke</a>
+                    <a href="#">Arrythmia</a>
+                    <a href="#">Angina</a>
+                 </div>
+         </div>
+         <div class="dropdown3">
+             <button class="dropbtn3">Respiratory</button>
+                 <div class="dropdown-content3">
+                    <a href="#">Influenza</a>
+                    <a href="#">Common Cold</a>
+                    <a href="#">Pneumonia</a>
+                    <a href="#">Cystic Fibrosis</a>
+                 </div>
+         </div>
+         <div class="dropdown4">
+             <button class="dropbtn4">Gastrointestinal</button>
+                 <div class="dropdown-content4">
+                    <a href="#">GERD</a>
+                    <a href="#">Constipation</a>
+                    <a href="#">Ulcers</a>
+                    <a href="#">Lactose Intolerance</a>
+                    <a href="#">Food Poisoning</a>
+                </div>
+         </div>
+         <div class="dropdown5">
+             <button class="dropbtn5">COVID 19</button>
+                 <div class="dropdown-content5">
+                    <a href="#">Covid-19</a>
+                </div>
+         </div>
+         </div>
     </div>
     
 </p>

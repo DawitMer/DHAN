@@ -12,7 +12,7 @@
 
 .main{
     align-items: center;
-    background-color: lightgray;
+    background-color: lightcyan;
     padding: 15px;
     margin-left: 5px;
 }
@@ -40,3 +40,226 @@ h3{
 .sidebar input{
     align-self: center;
 }
+.navbar {
+    overflow: hidden;
+    background-color: black;
+}
+.navbar a {
+    float: left;
+    font-size: 16px;
+    color: black;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+/*Dropdown Button */
+.dropdown {
+    float: left;
+    overflow: hidden;
+}
+
+.dropdown .dropbtn {
+    font-size: 16px;
+    border: none;
+    outline: none;
+    color: white;
+    padding: 14px 16px;
+    background-color: inherit;
+    font-family: inherit;
+    margin: 0;
+}
+.navbar a:hover, .dropdown:hover .dropbtn {
+    background-color: white;
+    color: black;
+}
+
+/* Dropdown Content */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+/*Links inside dropdown */
+.dropdown-content a {
+    float: none;
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+}
+.dropdown-content a:hover {background-color: #ddd;}
+.dropdown:hover .dropdown-content {display: block;}
+
+/* Dropdown for Heart */
+
+.dropdown2 {
+    float: left;
+    overflow: hidden;
+}
+
+.dropdown2 .dropbtn2 {
+    font-size: 16px;
+    border: none;
+    outline: none;
+    color: white;
+    padding: 14px 16px;
+    background-color: inherit;
+    font-family: inherit;
+    margin: 0;
+}
+.navbar a:hover, .dropdown2:hover .dropbtn2 {
+    background-color: white;
+    color: black;
+}
+
+/* Dropdown Content */
+.dropdown-content2 {
+    display: none;
+    position: absolute;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+/*Links inside dropdown */
+.dropdown-content2 a {
+    float: none;
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+}
+.dropdown-content2 a:hover {background-color: #ddd;}
+.dropdown2:hover .dropdown-content2 {display: block;}
+
+/* Dropdown for Respiratory */
+.dropdown3 {
+    float: left;
+    overflow: hidden;
+}
+
+.dropdown3 .dropbtn3 {
+    font-size: 16px;
+    border: none;
+    outline: none;
+    color: white;
+    padding: 14px 16px;
+    background-color: inherit;
+    font-family: inherit;
+    margin: 0;
+}
+.navbar a:hover, .dropdown3:hover .dropbtn3 {
+    background-color: white;
+    color: black;
+}
+
+/* Dropdown Content */
+.dropdown-content3 {
+    display: none;
+    position: absolute;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+/*Links inside dropdown */
+.dropdown-content3 a {
+    float: none;
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+}
+.dropdown-content3 a:hover {background-color: #ddd;}
+.dropdown3:hover .dropdown-content3 {display: block;}
+
+/* Dropdown for Gastro */
+.dropdown4 {
+    float: left;
+    overflow: hidden;
+}
+
+.dropdown4 .dropbtn4 {
+    font-size: 16px;
+    border: none;
+    outline: none;
+    color: white;
+    padding: 14px 16px;
+    background-color: inherit;
+    font-family: inherit;
+    margin: 0;
+}
+.navbar a:hover, .dropdown4:hover .dropbtn4 {
+    background-color: white;
+    color: black;
+}
+
+/* Dropdown Content */
+.dropdown-content4 {
+    display: none;
+    position: absolute;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+/*Links inside dropdown */
+.dropdown-content4 a {
+    float: none;
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+}
+.dropdown-content4 a:hover {background-color: #ddd;}
+.dropdown4:hover .dropdown-content4 {display: block;}
+
+/*Dropdown for Covid */
+.dropdown5 {
+    float: left;
+    overflow: hidden;
+}
+
+.dropdown5 .dropbtn5 {
+    font-size: 16px;
+    border: none;
+    outline: none;
+    color: white;
+    padding: 14px 16px;
+    background-color: inherit;
+    font-family: inherit;
+    margin: 0;
+}
+.navbar a:hover, .dropdown5:hover .dropbtn5 {
+    background-color: white;
+    color: black;
+}
+
+/* Dropdown Content */
+.dropdown-content5 {
+    display: none;
+    position: absolute;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+/*Links inside dropdown */
+.dropdown-content5 a {
+    float: none;
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+}
+.dropdown-content5 a:hover {background-color: #ddd;}
+.dropdown5:hover .dropdown-content5 {display: block;}
+
