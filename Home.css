@@ -38,14 +38,24 @@ h3{
 }
 
 .sidebar input{
-    align-self: center;
+    align-self: center; 
 }
+
+.checkboxes {
+    text-align: justify;
+}
+
 .navbar {
     overflow: hidden;
     background-color: black;
 }
 .navbar a {
-    float: left;
+    float: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    
     font-size: 16px;
     color: black;
     text-align: center;
@@ -179,7 +189,7 @@ h3{
 .dropdown-content3 a:hover {background-color: #ddd;}
 .dropdown3:hover .dropdown-content3 {display: block;}
 
-/* Dropdown for Gastro */
+/* Dropdown for Digestive */
 .dropdown4 {
     float: left;
     overflow: hidden;
