@@ -38,8 +38,9 @@ h3{
 }
 
 .sidebar input{
-    align-self: center;
+    align-self: center; 
 }
+
 .navbar {
     overflow: hidden;
     background-color: black;
@@ -179,7 +180,7 @@ h3{
 .dropdown-content3 a:hover {background-color: #ddd;}
 .dropdown3:hover .dropdown-content3 {display: block;}
 
-/* Dropdown for Gastro */
+/* Dropdown for Digestive */
 .dropdown4 {
     float: left;
     overflow: hidden;
