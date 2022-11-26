@@ -41,21 +41,12 @@ h3{
     align-self: center; 
 }
 
-.checkboxes {
-    text-align: justify;
-}
-
 .navbar {
     overflow: hidden;
     background-color: black;
 }
 .navbar a {
-    float: none;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    
+    float: left;
     font-size: 16px;
     color: black;
     text-align: center;
