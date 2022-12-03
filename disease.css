@@ -3,4 +3,83 @@ body {
     background-attachment: fixed;
     background-image: linear-gradient(lightcyan 10%, blueviolet 100%, white 10%);
   }
+  .img_health{
+    width: 100px;
+    height: 100px;
+  }
+  .Logo{
+    display: flex;
+    justify-content: center;  /*align the div to the center*/
+  }
   
+  .search_area{
+    margin-left: 25px;
+    display:none;
+    width: 90%;
+    height: 30px;
+    border-radius: 10px;
+    font-size: 16px;
+    text-align: left;
+    padding-left: 20px;
+  
+  }
+  .div_search{
+    text-align: center;
+  }
+  
+  .start_button{
+    cursor: pointer;
+    border: none;
+    font-size: 17px;
+    color: white;
+    background-color: lightgreen;
+    align-self: center;
+    position: absolute;
+    top: 50%;
+    left: 40%;
+    width: 250px;
+    height: 40px;
+    border-radius: 15px;
+  }
+  
+  #diseases_img{
+    margin-left: 30px;
+    margin-top: 20px;
+    width: 150px;
+    height: 150px;
+    visibility: hidden;
+  }
+  #div_disease{
+    margin-top: 20px;
+  }
+  .div_disease2{
+    display: flex;
+  }
+  .disease_dis{
+    align-self: center;
+  }
+  #heading{
+    margin-left: 10px;
+  }
+  #discription{
+    margin-left: 10px;
+  }
+  #diseases_img{
+    border-radius: 45px;
+  }
+  #Nothing_div{
+    font-size: 17;
+    text-align: center;
+    font-weight: bold;
+  }
+  #link_page{
+    margin-left: 10px;
+    visibility: hidden;
+  }
+  #Note{
+    width: 850px;
+    text-align: left;
+    margin-left: 40px;
+    margin-right: 10px;
+    margin-top: 10px;
+  }
