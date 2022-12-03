@@ -4,19 +4,19 @@
     <meta charset="utf-8">
     <meta name="viewport" content ="width=device-width, initial-scale=1">
     <title>Know Your Health</title>
-    <link rel="stylsheet" type="text/css" href="StartPage.css">
+    <link rel="stylesheet" type="text/css" href="StartPage.css">
     <script src="StartPage.js" type="text/javascript"></script>
 </head>
 <body>
     <h1>Symptoms</h1>
-    <nav id = "symptoms" onclick="" class="symptoms">
+    <nav id = "symptoms" onclick="DivContainer()" class="symptoms">
         <div class="div_container">
             <div class="bar1"></div>
             <div class="bar2"></div>
             <div class="bar3"></div>
         </div>
         <div class="div_search">
-            <form><input class="search_area" type="text" name="1" placeholder=" &#128269  Search Symptoms"></form>
+            <form><input id="search_area" class="search_area" type="text" onkeypress="search()" name="1" placeholder=" &#128269  Search Symptoms"></form>
         </div>
     </nav>
     <div class="DropDown_Container">
@@ -26,8 +26,6 @@
             <button id="1" onclick="button2_color()">Bloating</button>
             <button id="2" onclick="button3_color()" >Dry Stool</button>
 			<button id="3" onclick="button4_color()" >Acid Reflux</button>
-			<button id="4" onclick="button5_color()" >Urination</button>
-            <button id="3" onclick="button4_color()" >Acid Reflux</button>
 			<button id="4" onclick="button5_color()" >Urination</button>
         </div>
         <h2>Nervous System</h2>
