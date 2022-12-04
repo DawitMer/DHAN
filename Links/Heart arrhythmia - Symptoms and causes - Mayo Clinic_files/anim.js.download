@@ -1,0 +1,257 @@
+function frame0(){
+
+
+    var mc = exportRoot.mainMC
+    exportRoot.replayAnim = "inProgress"
+
+
+    exportRoot.initBanner = function (data) {
+
+        exportRoot.isReplay = false;
+        exportRoot.shadowReplay = false;
+
+        Object.keys = function(obj) {
+            var keys = [];
+
+            for (var i in obj) {
+                if (obj.hasOwnProperty(i)) {
+                    keys.push(i);
+                }
+            }
+            return keys
+        }
+        var keys = Object.keys(data)
+
+        for (var i in keys) {
+            var id = keys[i].substr(0, 4);
+            if (id == "head") {
+                exportRoot['' + keys[i]] = new Array()
+                exportRoot.fillHead(data[keys[i]], exportRoot['' + keys[i]])
+            } else if (id == "word") {
+                exportRoot['' + keys[i]] = new Array()
+                exportRoot.fillDocument(data[keys[i]], exportRoot['' + keys[i]])
+            } else if (id == "CTA" && data[keys[i]].length > 1) {
+                exportRoot.fillCta(data[keys[i]])
+            } else if (id == "CTAa") {
+                mc.cta.arrow.visible = data[keys[i]][0]
+                mc.cta.arrow.x += data[keys[i]][1]
+                mc.cta.arrow.y += data[keys[i]][2]
+            }
+        }
+    }
+
+
+    exportRoot.fillHead = function (txtDetails, aVar) {
+        var text = txtDetails[0]
+        var size = txtDetails[1]
+        var xOffset = txtDetails[2]
+        var yOffset = txtDetails[3]
+        var lineSpacing = txtDetails[4]
+        var lineWidth = txtDetails[5]
+        var align = txtDetails[6]
+
+        var aSentenceLine = this.getTheSentences(text, size, xOffset, yOffset, lineSpacing, lineWidth, align)
+
+        for (var i = 0; i < aSentenceLine.length; i++) {
+            var mc = new createjs.MovieClip();
+            mc.y = (i * parseInt(lineSpacing))
+            mc.y += yOffset
+            mc.y += parseInt(size)
+            mc.x += xOffset
+
+            var txtWidth = 0
+            for (var j = 0; j < aSentenceLine[i].length; j++) {
+                var text = new createjs.Text(aSentenceLine[i][j].txt, "normal " + size + " Segoe Pro", aSentenceLine[i][j].color);
+                text.textAlign = "Left"
+                text.x = txtWidth
+                text.textBaseline = "alphabetic"
+                txtWidth += (text.getTransformedBounds().width)
+                mc.addChild(text)
+            }
+            if (align == "center") mc.x = mc.x - mc.getTransformedBounds().width / 2
+            if (align == "right") mc.x = mc.x - mc.getTransformedBounds().width
+            if (mc.getTransformedBounds()) mc.cache(mc.getTransformedBounds().width*-1,mc.getTransformedBounds().height*-1,mc.getTransformedBounds().width*2,mc.getTransformedBounds().height*2,1.8)
+            exportRoot.mainMC.txt.addChild(mc);
+            aVar.push(mc)
+        }
+    }
+    exportRoot.fillDocument = function (txtDetails, aVar) {
+        var text = txtDetails[0]
+        var size = txtDetails[1]
+        var xOffset = txtDetails[2]
+        var yOffset = txtDetails[3]
+        var lineSpacing = txtDetails[4]
+        var lineWidth = txtDetails[5]
+        var align = txtDetails[6]
+
+        var aSentenceLine = this.getTheSentences(text, size, xOffset, yOffset, lineSpacing, lineWidth, align)
+
+        for (var i = 0; i < aSentenceLine.length; i++) {
+            var mc = new createjs.MovieClip();
+            mc.y = (i * parseInt(lineSpacing))
+            mc.y += yOffset
+            mc.y += parseInt(size)
+            mc.x += xOffset
+
+            var txtWidth = 0
+            for (var j = 0; j < aSentenceLine[i].length; j++) {
+                var text = new createjs.Text(aSentenceLine[i][j].txt, "normal " + size + " Segoe Pro", aSentenceLine[i][j].color);
+                text.textAlign = "Left"
+                text.x = txtWidth
+                text.textBaseline = "alphabetic"
+                txtWidth += (text.getTransformedBounds().width)
+                mc.addChild(text)
+            }
+            if (align == "center") mc.x = mc.x - mc.getTransformedBounds().width / 2
+            if (align == "right") mc.x = mc.x - mc.getTransformedBounds().width
+            if (mc.getTransformedBounds()) mc.cache(mc.getTransformedBounds().width*-1,mc.getTransformedBounds().height*-1,mc.getTransformedBounds().width*2,mc.getTransformedBounds().height*2,1.8)
+            exportRoot.mainMC.addChild(mc);
+            aVar.push(mc)
+        }
+    }
+
+
+
+    exportRoot.fillCta = function (txtDetails) {
+        var text = txtDetails[0]
+        var size = txtDetails[1]
+        var xOffset = txtDetails[2]
+        var yOffset = txtDetails[3]
+        var lineSpacing = txtDetails[4]
+        var lineWidth = txtDetails[5]
+        var align = txtDetails[6]
+
+
+        var aSentenceLine = this.getTheSentences(text, size, xOffset, yOffset, lineSpacing, lineWidth, align)
+
+        for (var i = 0; i < aSentenceLine.length; i++) {
+            var mc = new createjs.MovieClip();
+            mc.y = (i * parseInt(lineSpacing))
+            mc.y += yOffset
+            mc.y += (parseInt(size) * 0.90)
+            mc.x += xOffset
+
+            var txtWidth = 0
+            for (var j = 0; j < aSentenceLine[i].length; j++) {
+                var text = new createjs.Text(aSentenceLine[i][j].txt, "normal " + size + " Segoe Pro", aSentenceLine[i][j].color);
+                text.textAlign = "Left"
+                text.x = txtWidth
+                text.textBaseline = "alphabetic"
+                txtWidth += (text.getTransformedBounds().width)
+                mc.addChild(text)
+            }
+            if (align == "center") mc.x = mc.x - mc.getTransformedBounds().width / 2
+            if (align == "right") mc.x = mc.x - mc.getTransformedBounds().width
+            mc.y = mc.y - (mc.getTransformedBounds().height / 2)
+            if (mc.getTransformedBounds()) mc.cache(mc.getTransformedBounds().width*-1,mc.getTransformedBounds().height*-1,mc.getTransformedBounds().width*2,mc.getTransformedBounds().height*2,1.5)
+            this.mainMC.txtCta.addChild(mc);
+        }
+    }
+
+    exportRoot.getTheSentences = function (text, size, xOffset, yOffset, lineSpacing, lineWidth, align) {
+        var sentences = new Array()
+        var aSentenceLine = new Array()
+        var aStr = text.substr(0);
+        sentences = aStr.split("|");
+        var lastColor = "#000000"
+        // Figure out the setence lines
+
+        for (var i = 0; i < sentences.length; i++) {
+            var aS = sentences[i].substr(0);
+            var aSplit = new Array()
+            aSplit = aS.split("<");
+            aSplit = aSplit.filter(Boolean)
+            var wholeSentence = new Array()
+
+            for (var j = 0; j < aSplit.length; j++) {
+
+                var checkColor = aSplit[j].indexOf("#")
+                var color = (checkColor == -1) ? lastColor : aSplit[j].substr(0, 7);
+                lastColor = color
+                var txt = (checkColor == -1) ? aSplit[j].substr(0) : aSplit[j].substr(8);
+                var subSentence = {
+                    color: color,
+                    txt: txt
+                };
+                wholeSentence.push(subSentence)
+            }
+            aSentenceLine.push(wholeSentence)
+        }
+        return aSentenceLine
+    }
+
+
+    var mc = exportRoot.mainMC
+    var icons = mc.icons
+    var phone = mc.phone
+
+    /*mc.cta.alpha=0
+    mc.replay_btn.alpha=0*/
+
+    exportRoot.runBanner = function() {
+
+        exportRoot.tl1 = new gsap.timeline();
+
+        exportRoot.tl1.from(exportRoot.headline1, 0.8, { x: "+=100", alpha: 0, ease:Power4.easeOut, stagger:0.1}, "+=2.4")
+            .from(exportRoot.headline2, 0.8, { x: "+=100", alpha: 0, ease:Power4.easeOut, stagger: 0.1}, "-=0.6");
+
+        exportRoot.tl1.pause();
+
+
+        this.tlicons = new gsap.timeline();
+
+        exportRoot.tlicons.to(mc.bg, 1, { alpha:0,	ease:Quart.easeInOut});
+
+        exportRoot.tlicons.from(mc.icons.icon_onedrive, 4, { x: "+=100", y: "+=250",	ease:Quart.easeOut}, "<");
+        exportRoot.tlicons.from(mc.icons.icon_onedrive.shad, 4, { y: "-=28",	ease:Quart.easeOut}, "<");
+        exportRoot.tlicons.from(mc.icons.icon_bookings, 3.8, { x: "+=100",  y: "+=250",	ease:Quart.easeOut}, "-=3.9");
+        exportRoot.tlicons.from(mc.icons.icon_bookings.shad, 3.8, { y: "-=28",	ease:Quart.easeOut}, "-=3.9");
+        exportRoot.tlicons.from(mc.icons.icon_exchange, 3.7, { x: "+=100",  y: "+=250",	ease:Quart.easeOut}, "-=3.8");
+        exportRoot.tlicons.from(mc.icons.icon_exchange.shad, 3.7, { y: "-=28",	ease:Quart.easeOut}, "-=3.8");
+        exportRoot.tlicons.from(mc.icons.icon_sharepoint, 3.6, { x: "+=100",  y: "+=250",	ease:Quart.easeOut}, "-=3.7");
+        exportRoot.tlicons.from(mc.icons.icon_sharepoint.shad, 3.6, { y: "-=28",	ease:Quart.easeOut}, "-=3.7");
+        exportRoot.tlicons.from(mc.icons.icon_teams, 3.5, { x: "+=100",  y: "+=250",	ease:Quart.easeOut}, "-=3.6");
+        exportRoot.tlicons.from(mc.icons.icon_teams.shad, 3.5, { y: "-=28",	ease:Quart.easeOut}, "-=3.6");
+        exportRoot.tlicons.from(mc.icons.icon_word, 3.4, { x: "+=100",  y: "+=250",	ease:Quart.easeOut}, "-=3.5");
+        exportRoot.tlicons.from(mc.icons.icon_word.shad, 3.4, { y: "-=28",	ease:Quart.easeOut}, "-=3.5");
+        exportRoot.tlicons.from(mc.icons.icon_outlook, 3.3, { x: "+=100",  y: "+=250",	ease:Quart.easeOut}, "-=3.4");
+        exportRoot.tlicons.from(mc.icons.icon_outlook.shad, 3.3, { y: "-=28",	ease:Quart.easeOut}, "-=3.4");
+        exportRoot.tlicons.from(mc.icons.icon_excel, 3.1, { x: "+=100",  y: "+=250",	ease:Quart.easeOut}, "-=3.2");
+        exportRoot.tlicons.from(mc.icons.icon_excel.shad, 3.1, { y: "-=28",	ease:Quart.easeOut}, "-=3.2");
+        exportRoot.tlicons.from(mc.icons.icon_powerpoint, 2.8, { x: "+=100",  y: "+=250",	ease:Quart.easeOut}, "-=2.9");
+        exportRoot.tlicons.from(mc.icons.icon_powerpoint.shad, 2.8, { y: "-=28",	ease:Quart.easeOut}, "-=2.9");
+
+        exportRoot.tlicons.to(mc.icons, 2, {scaleX:1, scaleY:1, x: "+=8",  y: "-=19",	ease:Quart.easeInOut}, "-=1");
+        exportRoot.tlicons.to(mc.icons.icon_onedrive, 2, {scaleX:.38, scaleY:.38, x: 222,  y: -152,	ease:Quart.easeInOut}, "-=1.9");
+        exportRoot.tlicons.to(mc.icons.icon_exchange, 2, {scaleX:.38, scaleY:.38, x: 218,  y: -94,	ease:Quart.easeInOut}, "-=1.8 ");
+        exportRoot.tlicons.to(mc.icons.icon_bookings, 2, {scaleX:.38, scaleY:.38, x: 278,  y: -113,	ease:Quart.easeInOut}, "-=1.7");
+        exportRoot.tlicons.to(mc.icons.icon_teams, 2, {scaleX:.38, scaleY:.38, x: 267,  y: -50,	ease:Quart.easeInOut}, "-=1.8");
+        exportRoot.tlicons.to(mc.icons.icon_powerpoint.blur, 2, {alpha:0, ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.to(mc.icons.icon_word.blur, 2, {alpha:0,	ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.to(mc.icons.icon_sharepoint.blur, 2, {alpha:0,	ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.to(mc.icons.icon_excel.blur, 2, {alpha:0,	ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.to(mc.icons.icon_outlook.blur, 2, {alpha:0,	ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.from(mc.icons.icon_powerpoint.icon, 2, {alpha:0, ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.from(mc.icons.icon_word.icon, 2, {alpha:0,	ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.from(mc.icons.icon_sharepoint.icon, 2, {alpha:0,	ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.from(mc.icons.icon_excel.icon, 2, {alpha:0,	ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.from(mc.icons.icon_outlook.icon, 2, {alpha:0,	ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.from(mc.icons.icon_powerpoint.shad, 2, {scaleX:1.5, scaleY:1.5, alpha:.8, ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.from(mc.icons.icon_word.shad, 2, {scaleX:1.5, scaleY:1.5, alpha:.8,	ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.from(mc.icons.icon_sharepoint.shad, 2, {scaleX:1.5, scaleY:1.5, alpha:.8,	ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.from(mc.icons.icon_excel.shad, 2, {scaleX:1.5, scaleY:1.5, alpha:.8,	ease:Quart.easeInOut}, "<");
+        exportRoot.tlicons.from(mc.icons.icon_outlook.shad, 2, {scaleX:1.5, scaleY:1.5, alpha:.8,	ease:Quart.easeInOut}, "<");
+
+        exportRoot.tlicons.from([mc.txtCta,mc.cta], 0.7, { alpha: 0, x: "+=100",	ease:Power4.easeOut}, "-=0.6");
+        exportRoot.tlicons.from(mc.replay_btn, 0.7, { alpha: 0,ease:Power4.easeOut, onStart:function(){exportRoot.isReplay = true;}}, "-=.6");
+
+        exportRoot.tlicons.pause();
+
+
+        mc.logo_intro.gotoAndPlay(1);
+
+    }
+
+
+
+}

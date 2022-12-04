@@ -1,0 +1,204 @@
+(function(networkId) {
+var cacheLifetimeDays = 1;
+
+var customDataWaitForConfig = [
+  { on: function() { return Invoca.Client.parseCustomDataField("account", "Last", "URLParam", ""); }, paramName: "account", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("accountOld", "Last", "URLParam", ""); }, paramName: "accountOld", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("ad_group", "Last", "URLParam", ""); }, paramName: "ad_group", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("AMPURL", "Last", "JavascriptDataLayer", "document.referrer"); }, paramName: "AMPURL", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("cauid", "Last", "URLParam", ""); }, paramName: "cauid", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("CAUID(Old)", "Last", "URLParam", ""); }, paramName: "CAUID(Old)", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("customer_id", "Last", "URLParam", ""); }, paramName: "customer_id", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("device", "Last", "URLParam", ""); }, paramName: "device", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("domain", "Last", "JavascriptDataLayer", "window.location.hostname"); }, paramName: "domain", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("domainOld", "Last", "URLParam", ""); }, paramName: "domainOld", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("extension", "Last", "URLParam", ""); }, paramName: "extension", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("gclid", "Last", "URLParam", ""); }, paramName: "gclid", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("gclsrc", "Last", "URLParam", ""); }, paramName: "gclsrc", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("geo", "Last", "URLParam", ""); }, paramName: "geo", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("g_cid", "Last", "Cookie", "g_cid"); }, paramName: "g_cid", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("invsrc", "First", "URLParam", ""); }, paramName: "invsrc", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("kw", "Last", "URLParam", ""); }, paramName: "kw", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("landingPage", "First", "JavascriptDataLayer", "Invoca.location"); }, paramName: "landingPage", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("landingPageOld", "Last", "URLParam", ""); }, paramName: "landingPageOld", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("location", "Last", "URLParam", ""); }, paramName: "location", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("matchtype", "Last", "URLParam", ""); }, paramName: "matchtype", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("mc_id", "Last", "URLParam", ""); }, paramName: "mc_id", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("media_type", "Last", "URLParam", ""); }, paramName: "media_type", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("msclkid", "Last", "URLParam", ""); }, paramName: "msclkid", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("network", "Last", "URLParam", ""); }, paramName: "network", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("placementsite", "Last", "URLParam", ""); }, paramName: "placementsite", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("referrer", "Last", "URLParam", ""); }, paramName: "referrer", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("rtr_param", "Last", "URLParam", ""); }, paramName: "rtr_param", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("sitetarget", "Last", "URLParam", ""); }, paramName: "sitetarget", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("target", "Last", "URLParam", ""); }, paramName: "target", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("utm_campaign", "Last", "URLParam", ""); }, paramName: "utm_campaign", fallbackValue: null },
+  { on: function() { return Invoca.Client.parseCustomDataField("utm_medium", "Last", "URLParam", ""); }, paramName: "utm_medium", fallbackValue: function() { return Invoca.PNAPI.currentPageSettings.poolParams.utm_medium || null; } },
+  { on: function() { return Invoca.Client.parseCustomDataField("utm_source", "Last", "URLParam", ""); }, paramName: "utm_source", fallbackValue: function() { return Invoca.PNAPI.currentPageSettings.poolParams.utm_source || null; } },
+  { on: function() { return Invoca.Client.parseCustomDataField("uuid", "Last", "JavascriptDataLayer", "Invoca.Tools.readInvocaData(\"uuid\", invocaUUID())"); }, paramName: "uuid", fallbackValue: null }
+];
+
+var defaultCampaignId = null;
+
+var destinationSettings = {
+  paramName: null
+};
+
+var numbersToReplace = null;
+
+var organicSources = false;
+
+var reRunAfter = null;
+
+var requiredParams = {"invsrc":"*"};
+
+var resetCacheOn = [];
+
+var waitFor = 0;
+
+var customCodeIsSet = (function() {
+  Invoca.Client.customCode = function(options) {
+    /* For more information about the settings available below, visit our developers portal here: http://developers.invoca.net/en/latest/web_integration/pnapi_web_integration.html#client-side-parameters
+ */
+ 
+ //captures invsrc as a cookie
+ try {
+  Invoca.Tools.allowedClientSideParams(['invsrc']);
+} catch (error) {
+  console.log(error);
+}
+
+
+// Creates the Invoca campaign ID mapping
+function buildCampaignMapping() {
+  // Use 'invsrc' in URL for campaign mapping
+  var mapping = Invoca.Tools.readUrl("invsrc") || Invoca.Tools.readInvocaData("invsrc");
+
+  // Number to be replaced on the left, with the Invoca Campaign ID mapping on the right
+  // Sets the Campaign ID to the Correct Profile in Invoca by adding a prefix to the campaign ID derived from "invsrc" value
+  var numbersToReplace = {
+    "800-446-2279": mapping + "_arizonaapp",
+    "904-953-0853": mapping + "_floridaapp",
+    "507-538-3270": mapping + "_minnesotaapp",
+    "855-629-6543": mapping + "_childrenscenter",
+    "507-266-9100": mapping + "_smcrochester",
+    "612-313-0520": mapping + "_smcminneapolis",
+    "507-266-7800": mapping + "_smcedu",
+    "480-301-8088": mapping + "_execarizona",
+    "904-953-2907": mapping + "_execflorida",
+    "507-284-2288": mapping + "_execminnesota",
+    "507-284-2193": mapping + "_rochester48hourbraintumor",
+    "904-953-0818": mapping + "_florida48hourbraintumor",
+    "480-301-4193": mapping + "_arizona48hourbraintumor",
+    "904-953-7000": mapping + "_internationalflorida",
+    "507-284-8884": mapping + "_internationalminnesota",
+    "480-301-7101": mapping + "_internationalarizona",
+    "403-242-5320": mapping + "_canadacalgary",
+    "807-346-2218": mapping + "_canadathunderbay",
+    "204-942-0659": mapping + "_canadawinnipeg",
+    "866-227-7501": mapping + "_livertxminnesota",
+    "480-342-4800": mapping + "_bmttxarizona",
+    "904-953-7223": mapping + "_bmttxflorida",
+    "800-344-6296": mapping + "_txarizona",
+    "866-249-1648": mapping + "_kidneypancreastxminnesota",
+    "800-422-6296": mapping + "_heartlungtxminnesota",
+    "904-956-3309": mapping + "_txflorida",
+    "507-284-5253": mapping + "_bmttxrochester",
+    "604-254-0828": mapping + "_canadabritishcolumbia",
+    "866-629-6362": mapping + "_medprofaz",
+    "800-634-1417": mapping + "_medproffl",
+    "800-533-1564": mapping + "_medprofmn",
+    "480-342-2270": mapping + "_cardiothoracic_az",
+    "904-956-3212": mapping + "_cardiothoracic_fl",
+    "855-629-6478": mapping + "_cvmed_mn",
+    "866-827-8810": mapping + "_cvsurgery_mn",
+    "507-255-2910": mapping + "_cvsurgeryet_mn",
+    "480-301-6539": mapping + "_neurolocal_az",
+    "904-953-0898": mapping + "_neurolocal_fl",
+    "507-284-1588": mapping + "_neurologylocal_mn",
+    "507-538-1515": mapping + "_nerologylocalafterhours_mn",
+    "507-284-8008": mapping + "_neurosurgerylocal_mn",
+    "904-953-0305": mapping + "_smcflorida",
+    "480-342-6800": mapping + "_smcarizona",
+    "507-284-2536": mapping + "_dermmsp",
+    "507-255-2000": mapping + "_minnesota48hourcvsurgery",
+    "904-953-0924": mapping + "_gynecology_fl",
+    "904-953-7330": mapping + "_menshealth_fl",
+    "904-956-1847": mapping + "_spinecenter_fl",
+    "904-953-0778": mapping + "_vascular_fl",
+    "904-953-0866": mapping + "_endocrinology_fl",
+    "904-953-0857": mapping + "_ortho_fl",
+    "904-953-0862": mapping + "_nephrology_fl",
+    "904-694-2238": mapping + "_neuroappt_fl",
+    "480-301-8000": mapping + "_neuroappt_az",
+    "507-284-2111": mapping + "_neuroappt_mn",
+    "904-953-0773": mapping + "_cvcts_fl",
+    "480-301-9426": mapping + "_achd_az",
+    "904-953-0856": mapping + "_neuroappt_fl",
+    "507-266-4714": mapping + "_camslocal_mn",
+    "833-751-2438": mapping + "_camstf_mn",
+    "507-284-3684": mapping + "_pediatricsurgery_mn",
+    "480-301-8484": mapping + "_localappt_az",
+    "877-841-1391": mapping + "_txbmt_mn",
+    "507-284-1148": mapping + "_pediatriconcology_mn",
+    "507-284-1451": mapping + "_spineortho_mn",
+    "507-284-4475": mapping + "_blooddonorcenter_mn",
+    "507-266-4056": mapping + "_gizenkers_mn",
+    "507-255-6930": mapping + "_endoscopic_mn",
+    "507-538-8400": mapping + "_ovariancancer_mn",
+    "904-953-7188": mapping + "_acuteleukemia_fl",
+    "904-953-0863": mapping + "_cancercare_fl",
+    "507-284-1600": mapping + "_bariatricsurgery_mn",
+    "904-953-0775": mapping + "_spine_fl",
+    "904-953-2228": mapping + "_bariatricsurgery_fl",
+    "904-953-0795": mapping + "_cosmeticcenter_fl",
+    "904-953-2073": mapping + "_cosmeticcenter2_fl",
+    "904-953-0891": mapping + "_gi_fl"
+    
+  };
+  return numbersToReplace;
+}
+
+options.numberToReplace = buildCampaignMapping();
+
+
+// Capture the Mayo landing page URL with all query string parameters
+// Make sure landingPage CDF is set to First
+// options.poolParams.landingPage = Invoca.Tools.readInvocaData("landingPage", Invoca.location);
+
+options.integrations = options.integrations || {};
+options.integrations.googleAnalytics = true;
+
+
+window.invocaUUID = function() {
+  return (new Date().getTime()).toString() + Math.floor(Math.random() * 10).toString() + Math.floor(Math.random() * 10).toString();
+};
+
+return options;
+  };
+
+  return true;
+})();
+
+var generatedOptions = {
+  autoSwap:            false,
+  cookieDays:          cacheLifetimeDays,
+  country:             null,
+  defaultCampaignId:   defaultCampaignId,
+  destinationSettings: destinationSettings,
+  disableUrlParams:    ['profileID','promo_number_description'],
+  doNotSwap:           [],
+  maxWaitFor:          waitFor,
+  networkId:           networkId || null,
+  numberToReplace:     numbersToReplace,
+  organicSources:      organicSources,
+  poolParams:          {},
+  reRunAfter:          reRunAfter,
+  requiredParams:      requiredParams,
+  resetCacheOn:        resetCacheOn,
+  waitForData:         customDataWaitForConfig
+};
+
+Invoca.Client.startFromWizard(generatedOptions);
+
+})(1321);

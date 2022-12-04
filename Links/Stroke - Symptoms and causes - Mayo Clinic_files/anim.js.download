@@ -1,0 +1,33 @@
+
+function frameAnim0() {
+    var mc = exportRoot.mainMC;
+    exportRoot.replayAnim = "inProgress";
+
+    copyText.create([
+        "headline1"
+    ]);
+
+    exportRoot.runBanner = function() {
+        this.tl1 = gsap.timeline();
+
+        this.tl1.from(mc.headline1.lines,{duration:.8, x: "+=100", alpha: 0, stagger: 0.1, ease:"power2.out"}, "<+1.7")
+
+        this.tl1.from(mc.cta, {duration:.8, x: "+=196", ease:"power2.out"}, "<+0.8")
+        this.tl1.from(mc.replay_btn, 0.7, { alpha: 0,ease:"power2.out",
+            onComplete: function () {
+                copyText.release();
+                exportRoot.isReplay = true;
+            }
+        }, "<+.7");
+
+        exportRoot.tl1.pause();
+
+        mc.logo_intro.gotoAndPlay(1);
+    }
+
+
+
+
+    //////////////////////////////////////////////////////
+
+}
