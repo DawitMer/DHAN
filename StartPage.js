@@ -1,4 +1,4 @@
-const symptoms = ["cough","loss of smell/taste", "sore throat","dry stool","acid reflux", "chest pain", "difficulty swallowing/chewing","nausea/vomiting, bloating","fatigue", "urinaton","sore throat", "fever", "nasal congestion","excess mucus", "chest pain", "fever","sore throat", "dry cough", "nasal congestion","depression", "diffculty swallowing/chewing"];
+const symptoms = ["covid","influenza","common cold","pneumonia","cystic fibrosis","coronary artery disease","myocardial infarction","stroke","arrhythmia","congenital heart disease","epilepsy","aneurysm","alzeihmer's","dementia","meningitis","parkinson's","gerd","constipation","diabetes","ulcers","lactose intolerance","covid","influenza","common cold","pneumonia","cystic fibrosis","coronary artery disease","myocardial infarction","stroke","arrhythmia","congenital heart disease","epilepsy","aneurysm","alzeihmer's","dementia","meningitis","parkinson's","gerd","constipation","diabetes","ulcers","lactose intolerance"];
 var searcharea=document.getElementById('search_area');
 
 function search() {
