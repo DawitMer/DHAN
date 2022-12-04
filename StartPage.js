@@ -14,21 +14,6 @@ function search() {
 		}
 		else if(event.key === 'Enter' && document.getElementById('search_area').value.toLowerCase() != symptoms[i]){
 			document.getElementById(nameid).style.display = "none";
-var searcharea=document.getElementById('search_area');
-
-function search() {
-	for (var i = 0; i <=symptoms.length ; i++) {
-		var nameid = String(i);
-		if(event.key === 'Enter' && document.getElementById('search_area').value.toLowerCase() == symptoms[i]) {
-			document.getElementById(nameid).style.display = "block";
-			event.preventDefault();
-		}
-		else if (event.key === 'Enter' && document.getElementById('search_area').value.toLowerCase() == "") {
-			document.getElementById(nameid).style.display = "block";
-			event.preventDefault();
-		}
-		else if(event.key === 'Enter' && document.getElementById('search_area').value.toLowerCase() != symptoms[i]){
-			document.getElementById(nameid).style.display = "none";
 			event.preventDefault();
 		}
 	}
@@ -274,7 +259,4 @@ function button22_color() {
 	}
 	
 }
-			event.preventDefault();
-		}
-	}
-}
+		
