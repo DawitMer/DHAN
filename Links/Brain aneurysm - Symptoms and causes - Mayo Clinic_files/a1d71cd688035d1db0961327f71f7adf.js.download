@@ -1,0 +1,2 @@
+Bootstrapper.bindImmediate(function(){var Bootstrapper=window["Bootstrapper"];var ensightenOptions=Bootstrapper.ensightenOptions;window.dcTrackingId="DC-9063344";var gtagSrc="https://www.googletagmanager.com/gtag/js?id\x3d"+window.dcTrackingId;Bootstrapper.loadScriptCallback(gtagSrc,function(){window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments)};window.gtag("set","allow_ad_personalization_signals",false);window.gtag("js",new Date);window.gtag("config",window.dcTrackingId)})},
+3777190,726751);

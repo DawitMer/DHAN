@@ -1,0 +1,59 @@
+/* banner for covid text */
+
+.banner {
+	position: relative;
+	text-align: left;
+}
+
+/* covid text */
+
+.covid-text {
+	position: absolute;
+	left: 15px;
+	color: #536119;
+	font-family: 'Abel', sans-serif;
+	font-weight: bold;
+}
+
+@media(min-width:768px) and (max-width: 991px) {
+	.covid-text {
+		top: 23px;
+		font-size: 2em;
+	}
+}
+
+@media(min-width:992px) and (max-width: 1199px) {
+	.covid-text {
+		top: 35px;
+		font-size: 3em;
+	}
+}
+
+@media(min-width:1200px) {
+	.covid-text {
+		top: 45px;
+		font-size: 3em;
+	}
+}
+
+/* custom well */
+
+.well-lightgreenBG {
+	padding: 10px;
+	background-color: #d8eeca;
+	border-radius: 4px;
+	-webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
+	box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05)
+}
+
+/* white background for FAQ section */
+
+.bg-white {
+	background-color: #fff;
+}
+
+/* remove margin from list items */
+
+ul.li-mrgn-lft-0 li {
+	margin: 0;
+}

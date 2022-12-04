@@ -1,0 +1,1931 @@
+"use strict";
+const rpiWebClientDefaults = {
+    debug: false,
+    clientId: "994225f8-3347-4482-b30b-1e48303937e1",
+    serverUrl: "prod-realtimeapi-usc1.rdpnt.com",
+    enableClickTracking: false,
+    enablePageVisitTracking: false,
+    visitorCookieDuration: 365,
+    realtimeCookieDomain: "",
+    realtimeCookieSameSite: "Lax",
+    serverCookieEnabled: false,
+    enableUrlParameterCaching: true,
+    urlParameterCachingOverrides: [],
+    requestGeolocation: false,
+    geolocationCookieDuration: 5
+};
+const rpiWebClientLensConfig = {
+     Lenses: [
+		{
+			type: "dom",
+			selectors: "meta[name=Audience]",
+			attribute: "content",
+			realtimeParameter:
+			{
+				name: "META_AUDIENCE_CONTENT",
+				isListParam: true,
+				trackLastViewed: true,
+				lastViewedParameterName: "LATEST_META_AUDIENCE_CONTENT"
+			}
+		},
+		{
+			type: "search",
+			searchParameter: "q",
+			realtimeParameter:
+			{
+				name: "SEARCH_QUERY",
+				isListParam: true,
+				trackLastViewed: true,
+				lastViewedParameterName: "LATEST_SEARCH_QUERY" 
+			}
+		},
+		{
+			type: "dom",
+			selectors: "meta[name=contentLanguage]",
+			attribute: "content",
+			realtimeParameter:
+				{
+					name: "LATEST_META_CONTENT_LANGUAGE",
+					isListParam: false
+				}
+		},
+		{
+		    type: "javascript",
+		    objectName: "window.location.href",
+		    realtimeParameter: 
+				{
+					name: "LATEST_WINDOW_LOCATION_HREF",
+					isListParam: false
+				}
+		}
+	
+	]
+};
+var RealtimeLensType;
+(function (RealtimeLensType) {
+    RealtimeLensType["Path"] = "path";
+    RealtimeLensType["Search"] = "search";
+    RealtimeLensType["Storage"] = "storage";
+    RealtimeLensType["Form"] = "form";
+    RealtimeLensType["Javascript"] = "javascript";
+    RealtimeLensType["Dom"] = "dom";
+})(RealtimeLensType || (RealtimeLensType = {}));
+var RealtimeProfileMergeType;
+(function (RealtimeProfileMergeType) {
+    RealtimeProfileMergeType[RealtimeProfileMergeType["DisableMerge"] = 0] = "DisableMerge";
+    RealtimeProfileMergeType[RealtimeProfileMergeType["MergeRegisterVisit"] = 1] = "MergeRegisterVisit";
+    RealtimeProfileMergeType[RealtimeProfileMergeType["MergeOnly"] = 2] = "MergeOnly";
+})(RealtimeProfileMergeType || (RealtimeProfileMergeType = {}));
+var RealtimeContextSearch;
+(function (RealtimeContextSearch) {
+    RealtimeContextSearch[RealtimeContextSearch["IncludeSubcontexts"] = 0] = "IncludeSubcontexts";
+    RealtimeContextSearch[RealtimeContextSearch["ExactPath"] = 1] = "ExactPath";
+    RealtimeContextSearch[RealtimeContextSearch["IncludeParentContexts"] = 2] = "IncludeParentContexts";
+    RealtimeContextSearch[RealtimeContextSearch["FirstParent"] = 3] = "FirstParent";
+})(RealtimeContextSearch || (RealtimeContextSearch = {}));
+var RealtimeTrackingMode;
+(function (RealtimeTrackingMode) {
+    RealtimeTrackingMode[RealtimeTrackingMode["Standard"] = 0] = "Standard";
+    RealtimeTrackingMode[RealtimeTrackingMode["NoTracking"] = 1] = "NoTracking";
+    RealtimeTrackingMode[RealtimeTrackingMode["Preview"] = 2] = "Preview";
+})(RealtimeTrackingMode || (RealtimeTrackingMode = {}));
+class RpiWebClient {
+    constructor() {
+        this.defaults = {};
+        this.realtimeParameters = [];
+        this.isInitialized = false;
+        this.data = { decisionResults: [], lensResults: [], tags: {}, recommendations: [] };
+        this.lensConfig = { Lenses: [] };
+        this.formLensFieldValues = {};
+        this.doNotTrack = false;
+        this.config = {};
+        this.visitor = { profile: { VisitorID: "", IsMasterKey: false, HasAlternativeKey: false, Keys: [] }, geolocationExpiry: 0 };
+        this.LOAD_EVENT = "rpiWebClientLoad";
+        this.PRE_INIT_EVENT = "rpiWebClientPreInit";
+        this.INIT_VISITOR_EVENT = "rpiWebClientInitVisitor";
+        this.ACTIVATE_LENSES_EVENT = "rpiWebClientLensesActivate";
+        this.INIT_EVENT = "rpiWebClientInit";
+        this.RENDER_CONTEXT_EVENT = "rpiWebClientContextDecisionRender";
+        this.RENDER_SMART_ASSET_EVENT = "rpiWebClientSmartAssetDecisionRender";
+        this.RENDER_LOOKUP_EVENT = "rpiWebClientLookupRequestRender";
+        this.VISITOR_SET_EVENT = "rpiWebClientVisitorSet";
+        this.VISITOR_CHANGE_EVENT = "rpiWebClientVisitorChange";
+        this.DECISION_RESULT_CLICK_EVENT = "rpiDecisionResultLinkClick";
+        this.DECISION_RESULT_LOAD_EVENT = "rpiDecisionResultLoad";
+        this.DECISION_TAG_LOAD_EVENT = "rpiDecisionTagLoad";
+        this.DECISION_RECOMMENDATION_LOAD_EVENT = "rpiDecisionRecommendationLoad";
+        this.LensType = RealtimeLensType;
+        if (typeof rpiWebClientDefaults !== "undefined") {
+            this.defaults = rpiWebClientDefaults;
+        }
+        if (typeof rpiWebClientLensConfig !== "undefined") {
+            this.lensConfig = rpiWebClientLensConfig;
+        }
+        this.decisionOptions = {
+            numberOfResults: 0,
+            applyNumberResultsToNested: true,
+            minuteOffsetUTC: encodeURIComponent(new Date().getTimezoneOffset().toString())
+        };
+        this.pageParameters = {
+            pageTitle: "",
+            goals: [],
+            pendingEvents: [],
+            impressionId: "",
+            cId: "",
+            exId: 0,
+            geolocation: null,
+            pagePublishId: "0"
+        };
+        this.location = this.parseUri();
+        this.parseRpiPageParams();
+        let self = this;
+        setTimeout(() => {
+            self.publishEvent(this.LOAD_EVENT, self);
+        }, 0);
+    }
+    init(opts, callback) {
+        let self = this;
+        if (!opts) {
+            opts = {};
+        }
+        this.config = Object.assign(Object.assign({}, this.defaults), opts);
+        this.log("config: " + JSON.stringify(this.config), "INFO");
+        this.publishEvent(this.PRE_INIT_EVENT, this);
+        this.visitor = this.getVisitorCookie();
+        this.log("visitor: " + JSON.stringify(this.visitor), "INFO");
+        if (this.config.enableDoNotTrack) {
+            this.doNotTrack = this.detectDoNotTrack();
+        }
+        this.publishEvent(this.INIT_VISITOR_EVENT, this);
+        this.initRealtimeParameters();
+        this.activateLenses();
+        this.publishEvent(this.ACTIVATE_LENSES_EVENT, this);
+        this.registerForCrossDomainTracking();
+        this.registerForClickEvents();
+        if (this.config.requestGeolocation) {
+            this.requestGeolocation(function (position) {
+                if (position.coords) {
+                    this.pageParameters.geolocation = position;
+                    this.flushRealtimeParameters();
+                }
+            });
+        }
+        this.subscribeEvent(window, this.VISITOR_CHANGE_EVENT, function (event) {
+            self.log("Handling " + self.VISITOR_CHANGE_EVENT + " event... pushing PageVisit web event.");
+            self.initPageEvents();
+        });
+        this.initPageEvents();
+        if (this.config.contexts || this.config.smartAssetDecisions) {
+            let smartAssetDecisions = [];
+            if (this.config.contexts) {
+                smartAssetDecisions = smartAssetDecisions.concat(this.getContextSmartAssetDecisions(this.config.contexts));
+            }
+            if (this.config.smartAssetDecisions) {
+                smartAssetDecisions = smartAssetDecisions.concat(this.config.smartAssetDecisions);
+            }
+            this.renderSmartAssetDecisions(smartAssetDecisions, function (smartAssetResponse) {
+                this.initCallback(callback);
+            });
+        }
+        else {
+            this.submitVisitorDetails(function (data) {
+                this.initCallback(callback);
+            });
+        }
+    }
+    initCallback(callback) {
+        this.publishEvent(this.INIT_EVENT, this);
+        this.isInitialized = true;
+        if (callback) {
+            callback();
+        }
+    }
+    log(message, logLevel) {
+        if (!logLevel) {
+            logLevel = "LOG";
+        }
+        if (this.config.debug) {
+            switch (logLevel) {
+                case "INFO":
+                    console.info(message);
+                    return;
+                case "WARN":
+                    console.warn(message);
+                    return;
+                case "ERROR":
+                    console.error(message);
+                    return;
+            }
+            console.log(message);
+        }
+    }
+    ;
+    subscribeEvent(element, type, callback) {
+        try {
+            element.addEventListener(type, callback, false);
+        }
+        catch (e) {
+            element.attachEvent('on' + type, callback);
+        }
+    }
+    ;
+    unsubscribeEvent(element, type, callback) {
+        if (element.removeEventListener) {
+            element.removeEventListener(type, callback, false);
+        }
+        else if (element.detachEvent) {
+            element.detachEvent("on" + type, callback);
+        }
+        else {
+            element["on" + type] = null;
+        }
+    }
+    publishEvent(type, detail) {
+        if (document.createEvent) {
+            let event;
+            try {
+                event = new CustomEvent(type, { detail: detail });
+            }
+            catch (e) {
+                event = document.createEvent("CustomEvent");
+                event.initCustomEvent(type, false, false, detail);
+            }
+            window.dispatchEvent(event);
+        }
+        else {
+            let event = document.createEventObject();
+            event.detail = detail;
+            window.fireEvent('on' + type, event);
+        }
+    }
+    ;
+    parseUri(sourceUri) {
+        if (!sourceUri) {
+            sourceUri = location.href;
+        }
+        let uriPartNames = ["href", "protocol", "host", "hostName", "port", "pathName", "directoryPath", "fileName", "search", "hash"];
+        let uriParts = new RegExp("^(?:([^:/?#.]+):)?(?://)?(([^:/?#]*)(?::(\\d*))?)((/(?:[^?#](?![^?#/]*\\.[^?#/.]+(?:[\\?#]|$)))*/?)?([^?#/]*))?(?:\\?([^#]*))?(?:#(.*))?").exec(sourceUri);
+        let result = {
+            href: "",
+            raw: "",
+            protocol: "",
+            host: "",
+            hostName: "",
+            port: "",
+            pathName: "",
+            directoryPath: "",
+            fileName: "",
+            search: "",
+            hash: "",
+            pathParts: [],
+            searchParts: {}
+        };
+        if (uriParts && uriParts.length) {
+            for (var i = 0; i < 10; i++) {
+                result[uriPartNames[i]] = (uriParts[i] ? uriParts[i] : "");
+            }
+        }
+        result.raw = result.protocol + '://' + result.host + result.pathName;
+        if (result.pathName.length > 1) {
+            let path = result.pathName.substring(1, result.pathName.length);
+            if (result.pathName.slice(-1) == "/") {
+                path = result.pathName.substring(1, result.pathName.length - 1);
+            }
+            result.pathParts = path.split("/");
+        }
+        if (result.search.length > 0) {
+            let searchParts = this.serializeQueryString(result.search);
+            if (searchParts != null) {
+                result.searchParts = searchParts;
+            }
+        }
+        if (result.directoryPath.length > 0) {
+            result.directoryPath = result.directoryPath.replace(/\/?$/, "/");
+        }
+        return result;
+    }
+    ;
+    serializeQueryString(queryString) {
+        if (!queryString) {
+            queryString = location.search.slice(1);
+        }
+        if (!queryString.length) {
+            return null;
+        }
+        let pairs = queryString.split('&');
+        let result = {};
+        for (let pair of pairs) {
+            let parts = pair.split('=');
+            let key = parts[0].toLowerCase();
+            if (result[key]) {
+                result[key] = decodeURIComponent(result[key]) + "," + decodeURIComponent(parts[1] || '');
+            }
+            else {
+                result[decodeURIComponent(key)] = decodeURIComponent(parts[1] || '');
+            }
+        }
+        return result;
+    }
+    ;
+    parseMatchPattern(input) {
+        if (!input) {
+            return null;
+        }
+        let matchPattern = '(?:^';
+        let result = /^(\*|https?|file|ftp|chrome-extension):\/\//.exec(input);
+        let regexEscape = function (s) {
+            return s.replace(/[[^$.?*+(){}\\]/g, '\\$&');
+        };
+        if (!result) {
+            return null;
+        }
+        input = input.substring(result[0].length);
+        matchPattern += result[1] === '*' ? 'https?://' : result[1] + '://';
+        if (result[1] !== 'file') {
+            if (!(result = /^(?:\*|(\*\.)?([^\/*]+))(?=\/)/.exec(input))) {
+                return null;
+            }
+            input = input.substring(result[0].length);
+            if (result[0] === '*') {
+                matchPattern += '[^/]+';
+            }
+            else {
+                if (result[1]) {
+                    matchPattern += '(?:[^/]+\\.)?';
+                }
+                matchPattern += regexEscape(result[2]);
+            }
+        }
+        matchPattern += input.split('*').map(regexEscape).join('.*');
+        matchPattern += '$)';
+        return matchPattern;
+    }
+    setElementData(element, name, value) {
+        if (element.dataset) {
+            element.dataset[name] = value;
+        }
+        else {
+            element.setAttribute("data-" + name, value);
+        }
+    }
+    getElementData(element, name) {
+        if (element.dataset) {
+            let value = element.dataset[name];
+            if (value) {
+                return value;
+            }
+        }
+        else {
+            let value = element.getAttribute("data-" + name);
+            if (value) {
+                return value;
+            }
+        }
+        return "";
+    }
+    setLocalStorageItem(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+    }
+    getLocalStorageItem(key) {
+        let storageItem = localStorage.getItem(key);
+        if (storageItem) {
+            try {
+                return JSON.parse(storageItem);
+            }
+            catch (error) {
+                return storageItem;
+            }
+        }
+        return null;
+    }
+    detectBrowser() {
+        let browser = "OTHER";
+        if (navigator.userAgent.indexOf("Edge") > -1) {
+            return "EDGE";
+        }
+        else if (navigator.userAgent.indexOf("OPR") > -1) {
+            return "OPERA";
+        }
+        else if (navigator.userAgent.indexOf("Chrome") > -1) {
+            return "CHROME";
+        }
+        else if (navigator.userAgent.indexOf("Safari") > -1) {
+            return "SAFARI";
+        }
+        else if (navigator.userAgent.indexOf("Firefox") > -1) {
+            return "FIREFOX";
+        }
+        else if (navigator.userAgent.indexOf("MSIE") > -1 || navigator.userAgent.indexOf("Trident") > -1) {
+            return "MSIE";
+        }
+        return browser;
+    }
+    detectDoNotTrack() {
+        if (navigator.doNotTrack || window.doNotTrack) {
+            if (window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes") {
+                this.log("Browser doNotTrack setting enabled", "INFO");
+                return true;
+            }
+            else {
+                this.log("Browser doNotTrack setting not enabled", "INFO");
+                return false;
+            }
+        }
+        else {
+            this.log("Browser doNotTrack setting not supported", "INFO");
+            return false;
+        }
+    }
+    getUuid() {
+        let dt = new Date().getTime();
+        let uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            let r = (dt + Math.random() * 16) % 16 | 0;
+            dt = Math.floor(dt / 16);
+            return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+        return uuid;
+    }
+    activateLenses() {
+        for (let lens of this.lensConfig.Lenses) {
+            this.activateLens(lens);
+        }
+    }
+    activateLens(lens) {
+        if (lens.type) {
+            switch (lens.type) {
+                case this.LensType.Storage:
+                    this.activateStorageLens(lens);
+                    return;
+                case this.LensType.Search:
+                    this.activateSearchLens(lens);
+                    return;
+                case this.LensType.Path:
+                    this.activatePathLens(lens);
+                    return;
+                case this.LensType.Javascript:
+                    this.activateJsLens(lens);
+                    return;
+                case this.LensType.Form:
+                    this.activateFormLens(lens);
+                    return;
+                case this.LensType.Dom:
+                    this.activateDomLens(lens);
+                    return;
+            }
+        }
+    }
+    activateStorageLens(lens) {
+        this.log("Activating Storage Lens for storage type: " + lens.storageType + ", lookup key: " + lens.lookupKey + ", realtime parameter: " + lens.realtimeParameter.name, "INFO");
+        let resultValue = (lens.storageType == "localstorage") ? this.getLocalStorageItem(lens.lookupKey) : this.getCookie(lens.lookupKey);
+        if (resultValue) {
+            this.log("-- Found value: " + resultValue + " for lookup key: " + lens.lookupKey);
+            this.pushLensParameter(lens.realtimeParameter, resultValue);
+        }
+        else if (lens.retry) {
+            this.log("-- No storage item found for lookup key: " + lens.lookupKey + ", setting retries...", "INFO");
+            setTimeout(() => { this.storageLensRetryHandler(lens); }, (!lens.retryDelayMs || lens.retryDelayMs == 0) ? 1000 : lens.retryDelayMs);
+        }
+    }
+    storageLensRetryHandler(lens, retryCount = 0) {
+        let maxRetryCount = (!lens.retryCount || lens.retryCount == 0) ? 10 : lens.retryCount;
+        let delayMs = (!lens.retryDelayMs || lens.retryDelayMs == 0) ? 1000 : lens.retryDelayMs;
+        if (retryCount <= maxRetryCount) {
+            retryCount++;
+            this.log("Retrying Storage Lens for storage type: " + lens.storageType + ", lookup key: " + lens.lookupKey + ", realtime parameter: " + lens.realtimeParameter.name, "INFO");
+            this.log("-- Retry attempt: " + retryCount + " of " + maxRetryCount, "INFO");
+            let resultValue = (lens.storageType == "localstorage") ? this.getLocalStorageItem(lens.lookupKey) : this.getCookie(lens.lookupKey);
+            if (resultValue) {
+                this.pushLensParameter(lens.realtimeParameter, resultValue);
+            }
+            if (!resultValue && retryCount < maxRetryCount) {
+                this.log("-- No storage item found for lookup key: " + lens.lookupKey + "...", "INFO");
+                setTimeout(() => { this.storageLensRetryHandler(lens, retryCount); }, delayMs);
+            }
+        }
+    }
+    activatePathLens(lens) {
+        this.log("Activating Path Lens for url pattern: " + lens.urlPattern + ", path parts: " + JSON.stringify(lens.pathParts), "INFO");
+        (lens.timeoutMs && this.isNumeric(lens.timeoutMs))
+            ? setTimeout(() => { this.pathLensHandler(lens); }, lens.timeoutMs)
+            : this.pathLensHandler(lens);
+    }
+    pathLensHandler(lens) {
+        this.log("Path Lens Activated...", "INFO");
+        let matchPattern = this.parseMatchPattern(lens.urlPattern);
+        if (matchPattern && this.location.raw.match(matchPattern)) {
+            for (let lensPathPart of lens.pathParts) {
+                if (this.location.pathParts.length >= lensPathPart.index) {
+                    var parameterValue = this.location.pathParts[lensPathPart.index - 1];
+                    if (parameterValue) {
+                        let parameterName = lensPathPart.realtimeParameter.name;
+                        this.log("-- Found value: " + parameterValue + " for path part at index: " + lensPathPart.index, "INFO");
+                        this.pushLensParameter(lensPathPart.realtimeParameter, parameterValue);
+                    }
+                }
+                else {
+                    this.log("-- Skipping path part at index: " + lensPathPart.index + ". Index out of bounds...", "INFO");
+                }
+            }
+        }
+    }
+    activateSearchLens(lens) {
+        this.log("Activating Search Lens for query string param: " + lens.searchParameter + ", realtime parameter: " + lens.realtimeParameter.name, "INFO");
+        (lens.timeoutMs && this.isNumeric(lens.timeoutMs))
+            ? setTimeout(() => { this.searchLensHandler(lens); }, lens.timeoutMs)
+            : this.searchLensHandler(lens);
+    }
+    searchLensHandler(lens) {
+        this.log("Search Lens Activated...", "INFO");
+        let qsParamValue = this.location.searchParts[lens.searchParameter.toLowerCase()];
+        if (qsParamValue) {
+            this.log("-- Found value: " + qsParamValue + " for query string parameter: " + lens.searchParameter, "INFO");
+            this.pushLensParameter(lens.realtimeParameter, qsParamValue);
+        }
+    }
+    activateJsLens(lens) {
+        this.log("Activating JS Lens for expression: " + lens.objectName + ", realtime parameter: " + lens.realtimeParameter.name, "INFO");
+        (lens.timeoutMs && this.isNumeric(lens.timeoutMs))
+            ? setTimeout(() => { this.jSLensHandler(lens); }, lens.timeoutMs)
+            : this.jSLensHandler(lens);
+    }
+    jSLensHandler(lens) {
+        this.log("JS Lens Activated...", "INFO");
+        let globCheck = lens.objectName;
+        let objectPathParts = lens.objectName.split(".");
+        if (objectPathParts[0]) {
+            globCheck = objectPathParts[0];
+        }
+        if (globCheck in window) {
+            try {
+                let resultObject = this.eval(lens.objectName);
+                if (resultObject) {
+                    let resultValue = resultObject.toString();
+                    if (typeof resultObject === 'object') {
+                        resultValue = JSON.stringify(resultObject);
+                    }
+                    this.log("-- Found value: " + resultValue + " for expression: " + lens.objectName);
+                    this.pushLensParameter(lens.realtimeParameter, resultValue);
+                }
+            }
+            catch (err) {
+                this.log("-- Error evaluating expression: " + lens.objectName + ". Error: " + err, "INFO");
+            }
+        }
+    }
+    activateFormLens(lens) {
+        this.log("Activating Form Lens for form name or id: " + lens.formNameOrId + ", index: " + lens.formIndex + ", formInputs: " + JSON.stringify(lens.formInputs), "INFO");
+        (lens.timeoutMs && this.isNumeric(lens.timeoutMs))
+            ? setTimeout(() => { this.formLensHandler(lens); }, lens.timeoutMs)
+            : this.formLensHandler(lens);
+    }
+    formLensHandler(lens) {
+        this.log("Form Lens Activated...", "INFO");
+        let targetForm;
+        if (lens.formIndex != undefined) {
+            this.log("-- Searching for form with index: " + lens.formIndex, "INFO");
+            targetForm = this.getFormByIndex(lens.formIndex);
+        }
+        else if (lens.formNameOrId) {
+            this.log("-- Searching for form with name or id: " + lens.formNameOrId, "INFO");
+            targetForm = this.getFormByNameOrId(lens.formNameOrId);
+        }
+        if (targetForm && targetForm.elements.length > 0) {
+            this.log("-- Found form...", "INFO");
+            for (let i = 0, element; element = targetForm.elements[i++];) {
+                for (let formInput of lens.formInputs) {
+                    if ((element.id && element.id == formInput.inputNameOrId)
+                        || (element.name && element.name == formInput.inputNameOrId)) {
+                        if (element.tagName == "INPUT") {
+                            let inputElement = element;
+                            switch (inputElement.type) {
+                                case "text":
+                                case "email":
+                                    this.log("-- Binding to blur event for: " + inputElement.name, "INFO");
+                                    this.subscribeEvent(inputElement, "blur", () => { this.formLensInputHandler(inputElement, formInput.realtimeParameter, lens); });
+                                    break;
+                                case "radio":
+                                case "checkbox":
+                                    this.log("-- Binding to change event for: " + inputElement.name, "INFO");
+                                    this.subscribeEvent(inputElement, "change", () => { this.formLensInputHandler(inputElement, formInput.realtimeParameter, lens); });
+                                    break;
+                            }
+                        }
+                        else if (element.tagName == "SELECT") {
+                            let selectElement = element;
+                            this.log("-- Binding to change event for: " + selectElement.name, "INFO");
+                            this.subscribeEvent(selectElement, "change", () => { this.formLensInputHandler(selectElement, formInput.realtimeParameter, lens); });
+                        }
+                    }
+                }
+            }
+        }
+    }
+    formLensInputHandler(element, lensParam, lens) {
+        let parameterValue = "";
+        let shouldPush = false;
+        let keyPrefix;
+        if (lens.formIndex != undefined) {
+            keyPrefix = lens.formIndex;
+        }
+        else if (lens.formNameOrId) {
+            keyPrefix = lens.formNameOrId;
+        }
+        if (element.tagName == "INPUT") {
+            parameterValue = element.value;
+        }
+        else {
+            parameterValue = element.options[element.selectedIndex].value;
+        }
+        let key = keyPrefix + "~~~" + lensParam.name;
+        if (parameterValue !== "") {
+            if (!this.formLensFieldValues[key]
+                || (this.formLensFieldValues[key] && this.formLensFieldValues[key] != parameterValue)) {
+                this.formLensFieldValues[key] = parameterValue;
+                shouldPush = true;
+            }
+        }
+        if (shouldPush) {
+            this.pushLensParameter(lensParam, parameterValue);
+        }
+    }
+    activateDomLens(lens) {
+        this.log("Activating DOM Lens with selectors: " + lens.selectors + ", realtime parameter: " + lens.realtimeParameter.name, "INFO");
+        (lens.timeoutMs && this.isNumeric(lens.timeoutMs))
+            ? setTimeout(() => { this.domLensHandler(lens); }, lens.timeoutMs)
+            : this.domLensHandler(lens);
+    }
+    domLensHandler(lens) {
+        this.log("DOM Lens Activated...", "INFO");
+        let index = 0;
+        let parameterValue = null;
+        if (lens.index != undefined) {
+            index = lens.index - 1;
+        }
+        let elements = document.querySelectorAll(lens.selectors);
+        if (elements && elements.length && elements.length > index) {
+            this.log("-- Found element at index: " + index, "INFO");
+            let element = elements[index];
+            if (lens.attribute) {
+                parameterValue = element.getAttribute(lens.attribute);
+                this.log("-- Found value: " + parameterValue + " for element attribute: " + lens.attribute, "INFO");
+            }
+            else {
+                parameterValue = element.textContent;
+                this.log("-- Found text content with value: " + parameterValue, "INFO");
+            }
+        }
+        if (parameterValue) {
+            this.pushLensParameter(lens.realtimeParameter, parameterValue);
+        }
+    }
+    pushLensParameter(lensParameter, parameterValue) {
+        if (parameterValue && parameterValue.length > 0) {
+            if (lensParameter.valueMapEnabled
+                && lensParameter.valueMap
+                && lensParameter.valueMap instanceof Map) {
+                if (lensParameter.isStrictValueMap && !lensParameter.valueMap.has(parameterValue)) {
+                    this.log("-- Key not found for strict parameter value mapping... skipping", "INFO");
+                    return;
+                }
+                let mappedValue = lensParameter.valueMap.get(parameterValue);
+                if (mappedValue && mappedValue.length > 0) {
+                    parameterValue = mappedValue;
+                }
+            }
+            this.pushRealtimeParameter(lensParameter.name, parameterValue, lensParameter.isListParam);
+            this.data.lensResults.push({ Name: lensParameter.name, Value: parameterValue });
+            if (lensParameter.trackLastViewed && lensParameter.lastViewedParameterName) {
+                this.pushRealtimeParameter(lensParameter.lastViewedParameterName, parameterValue);
+                this.data.lensResults.push({ Name: lensParameter.lastViewedParameterName, Value: parameterValue });
+            }
+            if (this.isInitialized) {
+                this.flushRealtimeParameters();
+            }
+        }
+        else {
+            this.log("-- Parameter value empty... skipping", "INFO");
+        }
+    }
+    getFormByNameOrId(nameOrId) {
+        let targetForm = document.getElementById(nameOrId);
+        if (targetForm && targetForm.nodeName == "FORM") {
+            return targetForm;
+        }
+        targetForm = document.getElementsByName(nameOrId)[0];
+        return (targetForm) ? targetForm : null;
+    }
+    getFormByIndex(index) {
+        if (document.forms.length && document.forms.length > index) {
+            return document.forms[index];
+        }
+        return null;
+    }
+    eval(obj) {
+        return Function('"use strict"; return (' + obj + ')')();
+    }
+    isNumeric(n) {
+        return !isNaN(parseFloat(n)) && isFinite(n);
+    }
+    parseRpiPageParams() {
+        let queryParts = this.location.searchParts;
+        if (queryParts) {
+            if (queryParts["exid"]) {
+                this.pageParameters.exId = Number(queryParts["exid"]);
+            }
+            if (queryParts["rpcid"]) {
+                this.pageParameters.cId = queryParts["rpcid"];
+            }
+        }
+    }
+    submitVisitorDetails(callback) {
+        this.log("Submitting visitor details...", "INFO");
+        this.submitVisitorRequestAsync(false, function (data) {
+            if (callback) {
+                callback.call(this, data);
+            }
+        });
+    }
+    getSmartAssetDecisions(smartAssetDecisions, callback, isMasterMessage) {
+        this.log("Getting decisions for smart assets: " + JSON.stringify(smartAssetDecisions), "INFO");
+        let self = this;
+        if (this.visitor.profile.VisitorID) {
+            let url = this.getDecisionsSmartAssetsUrl();
+            let decisionRequest = this.getApiSmartAssetRequest(false);
+            if (isMasterMessage != undefined) {
+                decisionRequest.IsMasterMessage = isMasterMessage;
+            }
+            decisionRequest.AssetLookups = smartAssetDecisions;
+            this.postRequestAsync(url, JSON.stringify(decisionRequest), function (data) {
+                let smartAssetResponse = this.parseResponseJSON(data);
+                this.parseVisitor(smartAssetResponse.Visitor);
+                this.cacheDecisionResults(smartAssetResponse.Results);
+                callback.call(self, smartAssetResponse);
+            }, undefined, this.shouldUseXhrCredentials());
+        }
+        else {
+            this.log("Unable to get context decision, visitor not set", "WARN");
+        }
+    }
+    renderSmartAssetDecisions(smartAssetDecisions, callback) {
+        this.log("Rendering content for smart assets: " + JSON.stringify(smartAssetDecisions), "INFO");
+        let self = this;
+        this.getSmartAssetDecisions(smartAssetDecisions, function (smartAssetResponse) {
+            for (let result of smartAssetResponse.Results) {
+                if (result.DecisionType == "Tag") {
+                    this.data.tags = Object.assign(Object.assign({}, this.data.tags), result.ResultContent);
+                    this.publishEvent(this.DECISION_TAG_LOAD_EVENT, result);
+                    continue;
+                }
+                else if (result.DecisionType == "Recommend") {
+                    this.data.recommendations.push(result.ResultContent);
+                    this.publishEvent(this.DECISION_RECOMMENDATION_LOAD_EVENT, result);
+                    continue;
+                }
+                let elementId;
+                let smartAssetDecision = smartAssetDecisions.find(c => c.PublishID == result.ContentID);
+                if (smartAssetDecision && smartAssetDecision.ElementID) {
+                    elementId = smartAssetDecision.ElementID;
+                }
+                this.renderDecisionContent(result, elementId);
+                this.publishEvent(this.RENDER_SMART_ASSET_EVENT, result);
+                if (callback) {
+                    callback.call(self, smartAssetResponse);
+                }
+            }
+        });
+    }
+    getContextDecision(contextPath, callback, returnAll) {
+        this.log("Getting decisions for context: " + contextPath, "INFO");
+        this.getContextDecisions([contextPath], callback, returnAll);
+    }
+    getContextDecisions(contextPaths, callback, returnAll) {
+        this.log("Getting decisions for context paths: " + JSON.stringify(contextPaths), "INFO");
+        let self = this;
+        if (this.visitor.profile.VisitorID) {
+            let smartAssetDecisions = this.getContextSmartAssetDecisions(contextPaths, returnAll);
+            this.getSmartAssetDecisions(smartAssetDecisions, function (smartAssetResponse) {
+                callback.call(self, smartAssetResponse.Results);
+            });
+        }
+        else {
+            this.log("Unable to get context decision, visitor not set", "WARN");
+        }
+    }
+    getContextSmartAssetDecisions(contextPaths, returnAll) {
+        if (returnAll == undefined) {
+            returnAll = false;
+        }
+        let realtimeContextSearch = RealtimeContextSearch.IncludeSubcontexts;
+        if (this.config.realtimeContextSearchMode != undefined) {
+            realtimeContextSearch = this.config.realtimeContextSearchMode;
+        }
+        let smartAssetDecisions = [];
+        for (let context of contextPaths) {
+            let decision = {};
+            decision.ContextSearch = { ContextPath: context, SearchOperator: realtimeContextSearch };
+            decision.ResultOptions = { ReturnAll: returnAll };
+            smartAssetDecisions.push(decision);
+        }
+        return smartAssetDecisions;
+    }
+    renderContextDecision(contextPath) {
+        this.log("Rendering content for context: " + contextPath, "INFO");
+        this.renderContextDecisions([contextPath]);
+    }
+    renderContextDecisions(contextPaths) {
+        this.log("Rendering content for context paths: " + JSON.stringify(contextPaths), "INFO");
+        this.getContextDecisions(contextPaths, function (results) {
+            for (let result of results) {
+                this.renderDecisionContent(result);
+            }
+            this.publishEvent(this.RENDER_CONTEXT_EVENT, results);
+        });
+    }
+    getDecision(publishId, isMasterMessage, callback) {
+        console.log('This function is deprecated.');
+        this.log("Getting decision for content id: " + publishId, "INFO");
+        return this.getDecisions([publishId], callback);
+    }
+    getDecisions(publishIds, callback) {
+        console.log('This function is deprecated.');
+        this.log("Getting decisions for content ids: " + JSON.stringify(publishIds), "INFO");
+        let self = this;
+        if (this.visitor.profile.VisitorID) {
+            let smartAssetDecisions = [];
+            for (let publishId of publishIds) {
+                let decision = {};
+                decision.PublishID = publishId;
+                smartAssetDecisions.push(decision);
+            }
+            this.getSmartAssetDecisions(smartAssetDecisions, function (smartAssetResponse) {
+                callback.call(self, smartAssetResponse.Results);
+            });
+        }
+        else {
+            this.log("Unable to get context decision, visitor not set", "WARN");
+        }
+    }
+    renderDecision(contentId, elementId) {
+        console.log('This function is deprecated.');
+        this.log("Rendering decision for content id: " + contentId, "INFO");
+        this.renderDecisions([{ contentId: contentId, elementId: elementId }]);
+    }
+    renderDecisions(contentDecisions) {
+        console.log('This function is deprecated.');
+        this.log("Rendering content decisions: " + JSON.stringify(contentDecisions), "INFO");
+        let smartAssetDecisions = [];
+        for (let contentDecision of contentDecisions) {
+            let decision = {};
+            decision.PublishID = contentDecision.contentId;
+            decision.ElementID = contentDecision.elementId;
+            smartAssetDecisions.push(decision);
+        }
+        this.renderSmartAssetDecisions(smartAssetDecisions);
+    }
+    cacheDecisionResults(results) {
+        this.data.decisionResults = this.data.decisionResults.concat(results);
+        this.publishEvent(this.DECISION_RESULT_LOAD_EVENT, results);
+    }
+    getCachedVisitor(callback) {
+        rpiWebClient.log("Getting cached visitor...");
+        let url = this.getCacheParametersUrl();
+        this.postRequestAsync(url, JSON.stringify(this.getCacheParametersRequest()), function (data) {
+            this.parseVisitorResponse(data, true);
+            if (callback) {
+                callback.call(this, data);
+            }
+        }, undefined, this.shouldUseXhrCredentials());
+    }
+    getVisitorView(viewName, callback) {
+        this.log("Getting visitor view: " + viewName, "INFO");
+        let self = this;
+        if (this.visitor.profile.VisitorID) {
+            let url = this.getVisitorViewUrl(viewName);
+            let visitorViewArguments = {
+                Identity: { VisitorID: this.visitor.profile.VisitorID },
+                Attributes: this.realtimeParameters,
+                TrackingMode: RealtimeTrackingMode.Standard
+            };
+            if (this.doNotTrack) {
+                visitorViewArguments.TrackingMode = RealtimeTrackingMode.NoTracking;
+            }
+            else if (this.config.isPreview) {
+                visitorViewArguments.TrackingMode = RealtimeTrackingMode.Preview;
+            }
+            this.realtimeParameters = [];
+            this.postRequestAsync(url, JSON.stringify(visitorViewArguments), function (data) {
+                callback.call(this, this.parseResponseJSON(data));
+            }, undefined, this.shouldUseXhrCredentials());
+        }
+        else {
+            this.log("Unable to get visitor view, visitor not set", "WARN");
+        }
+    }
+    getLookupAttributes(lookupRequest, callback) {
+        this.log("Getting lookup attributes for request: " + lookupRequest, "INFO");
+        if (this.visitor.profile.VisitorID) {
+            let url = this.getCacheVisitorsAttributesUrl();
+            this.postRequestAsync(url, lookupRequest, function (data) {
+                callback.call(this, this.parseResponseJSON(data));
+            }, undefined, this.shouldUseXhrCredentials());
+        }
+        else {
+            this.log("Unable to get lookup attributes, visitor not set", "WARN");
+        }
+    }
+    renderLookupAttributes(lookupRequest) {
+        this.log("Rendering lookup attributes for request: " + lookupRequest, "INFO");
+        this.getLookupAttributes(lookupRequest, function (results) {
+            for (let result of results) {
+                let elements = document.getElementsByName(result.ID);
+                for (let i = 0; i < elements.length; i++) {
+                    elements[i].innerHTML = result.Value;
+                }
+            }
+            this.publishEvent(this.RENDER_LOOKUP_EVENT, results);
+        });
+    }
+    submitVisitorRequestAsync(updateProfileOnly, onSuccess, onError) {
+        let url = this.getCacheVisitUrl() + "?updateProfileOnly=" + updateProfileOnly;
+        let regDetails = this.getVisitorRegistrationDetails();
+        this.postRequestAsync(url, JSON.stringify(regDetails), function (data) {
+            this.parseVisitorResponse(data, true);
+            if (onSuccess) {
+                onSuccess.call(this, data);
+            }
+        }, onError, this.shouldUseXhrCredentials());
+    }
+    parseResponseJSON(data) {
+        this.log("Parsing response data: " + data, "INFO");
+        let responseJSON = JSON.parse(data);
+        return responseJSON;
+    }
+    registerForCrossDomainTracking(enableCrossDomainTracking) {
+        if (enableCrossDomainTracking == undefined) {
+            if (this.config.enableCrossDomainTracking == undefined) {
+                enableCrossDomainTracking = false;
+            }
+            else {
+                enableCrossDomainTracking = this.config.enableCrossDomainTracking;
+            }
+        }
+        if (!enableCrossDomainTracking) {
+            return;
+        }
+        let elements = document.getElementsByTagName('a');
+        for (let i = 0, len = elements.length; i < len; i++) {
+            this.appendCrossDomainTrackingDetails(elements[i]);
+        }
+    }
+    appendCrossDomainTrackingDetails(anchor) {
+        if (!this.config.trackingDomains) {
+            return;
+        }
+        let qs = "rprtvid=" + this.visitor.profile.VisitorID + "&rprtdid=" + this.visitor.profile.DeviceID;
+        let href = anchor.getAttribute('href');
+        if (href) {
+            let location = this.parseUri(href);
+            if (location.hostName && this.config.trackingDomains.indexOf(location.hostName) >= 0) {
+                href += (/\?/.test(href) ? '&' : '?') + qs;
+                anchor.setAttribute('href', href);
+            }
+        }
+    }
+    attachClickEventHandler(anchor) {
+        if (!this.config.enableClickTracking) {
+            return;
+        }
+        this.subscribeEvent(anchor, "click", this.webEventClickHandler);
+    }
+    registerForClickEvents(element) {
+        let self = this;
+        let enableLinkTracking;
+        if (this.config.enableClickTracking == undefined) {
+            enableLinkTracking = false;
+        }
+        else {
+            enableLinkTracking = this.config.enableClickTracking;
+        }
+        if (!enableLinkTracking) {
+            return;
+        }
+        let anchors;
+        if (element == undefined) {
+            anchors = document.getElementsByTagName('a');
+        }
+        else {
+            anchors = element.getElementsByTagName('a');
+        }
+        for (let i = 0, len = anchors.length; i < len; i++) {
+            this.attachClickEventHandler(anchors[i]);
+        }
+    }
+    webEventClickHandler(event) {
+        if (event.target) {
+            let element = event.target;
+            while (element.nodeName != "A") {
+                element = element.parentElement;
+                if (!element) {
+                    element = event.target;
+                    break;
+                }
+            }
+            if (element && element.nodeName == "A") {
+                let anchor = element;
+                if (anchor.href) {
+                    let metadata = [];
+                    let resultId = rpiWebClient.getElementData(element, "resultId");
+                    if (resultId) {
+                        rpiWebClient.publishEvent(rpiWebClient.DECISION_RESULT_CLICK_EVENT, resultId);
+                        metadata = [{ Name: "resultId", Value: resultId }];
+                    }
+                    rpiWebClient.sendLinkClickEvent(anchor.href, metadata);
+                }
+            }
+        }
+    }
+    initRealtimeParameters() {
+        let excludeList = ["rpcid", "exid", "rpimg"];
+        let queryParts = this.location.searchParts;
+        if (queryParts) {
+            if (this.config.enableUrlParameterCaching) {
+                for (let key in queryParts) {
+                    let value = queryParts[key];
+                    if (excludeList.indexOf(key) < 0) {
+                        this.pushRealtimeParameter(key, value);
+                    }
+                }
+            }
+            else {
+                if (this.config.urlParameterCachingOverrides && this.config.urlParameterCachingOverrides.length > 0) {
+                    for (let param of this.config.urlParameterCachingOverrides) {
+                        let key = param.toLocaleLowerCase();
+                        if (queryParts[key]) {
+                            this.pushRealtimeParameter(key, queryParts[key]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    initPageEvents() {
+        let storageItems = this.getLocalStorageItem("PageLinkClick");
+        if (storageItems) {
+            for (let item of storageItems) {
+                this.queueWebEvent("PageLinkClick", null, item.href, null, item.metadata);
+            }
+            this.setLocalStorageItem("PageLinkClick", null);
+        }
+        if (this.config.enablePageVisitTracking) {
+            let pageTitle = document.title;
+            if (this.pageParameters.pageTitle) {
+                pageTitle = this.pageParameters.pageTitle;
+            }
+            this.queueWebEvent('PageVisit', null, pageTitle);
+        }
+        this.flushPendingEvents();
+    }
+    getVisitorRegistrationDetails() {
+        let publishId = "0";
+        if (this.pageParameters.pagePublishId) {
+            publishId = this.pageParameters.pagePublishId;
+        }
+        let exID = null;
+        let cID = null;
+        let msgIDs = null;
+        let queryParts = this.location.searchParts;
+        if (queryParts) {
+            exID = queryParts["exid"];
+            cID = queryParts["rpcid"];
+            msgIDs = queryParts["rpimg"];
+        }
+        let visitDetails = {};
+        visitDetails["PagePublishedID"] = publishId;
+        if (!this.visitor.profile.VisitorID) {
+            visitDetails["IsNewVisitor"] = true;
+        }
+        else {
+            visitDetails["IsNewVisitor"] = false;
+            visitDetails["VisitorID"] = this.visitor.profile.VisitorID;
+            visitDetails["DeviceID"] = this.visitor.profile.DeviceID;
+        }
+        let trackingObjects = {};
+        if (exID) {
+            trackingObjects["ChannelExecutionID"] = exID;
+            if (cID) {
+                trackingObjects["RPContactID"] = cID;
+            }
+        }
+        if (msgIDs) {
+            let msgComp = msgIDs.split("_");
+            if (msgComp.length > 1) {
+                trackingObjects["MessageListID"] = msgComp[0];
+                trackingObjects["MessageID"] = msgComp[1];
+            }
+        }
+        visitDetails["InteractionTracking"] = trackingObjects;
+        if (this.config.clientId) {
+            visitDetails["ClientID"] = this.config.clientId;
+        }
+        let referrer = document.referrer;
+        if (referrer) {
+            visitDetails["PageReferrer"] = referrer;
+        }
+        if (this.location.raw) {
+            visitDetails["RequestURL"] = this.location.raw;
+        }
+        if (this.pageParameters.geolocation) {
+            visitDetails["Geolocation"] = {
+                "Longitude": this.pageParameters.geolocation.coords.longitude,
+                "Latitude": this.pageParameters.geolocation.coords.latitude
+            };
+        }
+        visitDetails["VisitorAttributes"] = this.realtimeParameters;
+        this.realtimeParameters = [];
+        let trackingMode = RealtimeTrackingMode.Standard;
+        if (this.doNotTrack) {
+            trackingMode = RealtimeTrackingMode.NoTracking;
+        }
+        else if (this.config.isPreview) {
+            trackingMode = RealtimeTrackingMode.Preview;
+        }
+        visitDetails["TrackingMode"] = trackingMode;
+        return visitDetails;
+    }
+    getApiSmartAssetRequest(isMasterMessage, profileMergeMode) {
+        let request = {};
+        if (this.visitor.profile.DeviceID) {
+            request.DeviceID = this.visitor.profile.DeviceID;
+        }
+        request.ImpressionID = this.pageParameters.impressionId;
+        if (this.visitor.profile.VisitorID) {
+            let identity = {
+                VisitorID: this.visitor.profile.VisitorID,
+                IdentityKeys: {}
+            };
+            request.Identity = identity;
+        }
+        if (profileMergeMode == undefined) {
+            if (this.config.visitorProfileMergeMode != undefined) {
+                profileMergeMode = this.config.visitorProfileMergeMode;
+            }
+            else {
+                profileMergeMode = RealtimeProfileMergeType.MergeRegisterVisit;
+            }
+        }
+        request.ProfileMergeMode = profileMergeMode;
+        let visitDetails = {
+            IsNewVisitor: false,
+            ViewName: ""
+        };
+        let referrer = document.referrer;
+        if (referrer) {
+            visitDetails.PageReferrer = referrer;
+        }
+        request.VisitDetails = visitDetails;
+        request.PagePublishedID = this.pageParameters.pagePublishId;
+        if (this.realtimeParameters && this.realtimeParameters.length) {
+            request.Parameters = this.realtimeParameters;
+            this.realtimeParameters = [];
+        }
+        if (this.location.raw) {
+            request.RequestURL = this.location.raw;
+        }
+        if (this.pageParameters.geolocation) {
+            request.Geolocation = {
+                Longitude: this.pageParameters.geolocation.coords.longitude,
+                Latitude: this.pageParameters.geolocation.coords.latitude,
+                SearchString: ""
+            };
+        }
+        request.MinuteOffsetUTC = this.decisionOptions.minuteOffsetUTC;
+        request.APIContext = this.decisionOptions.apiContext;
+        request.IsMasterMessage = isMasterMessage;
+        request.InteractionTracking = {};
+        if (this.pageParameters.exId > 0) {
+            request.InteractionTracking.ChannelExecutionID = this.pageParameters.exId;
+        }
+        if (this.pageParameters.cId) {
+            request.InteractionTracking.RPContactID = this.pageParameters.cId;
+        }
+        request.TrackingMode = RealtimeTrackingMode.Standard;
+        if (this.doNotTrack) {
+            request.TrackingMode = RealtimeTrackingMode.NoTracking;
+        }
+        else if (this.config.isPreview) {
+            request.TrackingMode = RealtimeTrackingMode.Preview;
+        }
+        return request;
+    }
+    getCacheParametersRequest() {
+        let request = {
+            VisitorID: this.visitor.profile.VisitorID,
+            Parameters: this.realtimeParameters
+        };
+        return request;
+    }
+    requestGeolocation(onSuccess) {
+        if (!this.visitor.geolocationExpiry || this.visitor.geolocationExpiry < Date.now()) {
+            this.setGeolocationExpiry();
+            if (navigator.geolocation) {
+                let self = this;
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    self.log("Geolocation request success: longitude: " + position.coords.longitude + " latitude: " + position.coords.latitude, "INFO");
+                    onSuccess.call(self, position);
+                }, function (error) {
+                    self.log("Geolocation request failed with error code: " + error.code + ", message: " + error.message, "WARN");
+                }, { maximumAge: 300000, timeout: 10000 });
+            }
+            else {
+                this.log("Geolocation not supported by this browser", "WARN");
+            }
+        }
+    }
+    queueWebEvent(state, stateValue, extraParam, contentId, metadata) {
+        if (!extraParam) {
+            extraParam = null;
+        }
+        if (!contentId) {
+            contentId = null;
+        }
+        let rpiEvent = { state: state, stateValue: stateValue, extraParam: extraParam, contentID: contentId, metadata: metadata };
+        this.pageParameters.pendingEvents.push(rpiEvent);
+    }
+    pushWebEvent(state, stateValue, extraParam, contentId, metadata) {
+        this.queueWebEvent(state, stateValue, extraParam, contentId, metadata);
+        if (this.visitor.profile.VisitorID) {
+            this.flushPendingEvents();
+        }
+    }
+    flushPendingEvents() {
+        if (this.doNotTrack || this.config.isPreview) {
+            return;
+        }
+        if (this.visitor.profile.VisitorID) {
+            let hiddenElements = document.getElementsByName('rpiVisitorID');
+            for (let i = 0; i < hiddenElements.length; i++) {
+                hiddenElements[i].value = this.visitor.profile.VisitorID;
+            }
+            if (this.visitor.profile.DeviceID) {
+                hiddenElements = document.getElementsByName('rpiDeviceID');
+                for (let i = 0; i < hiddenElements.length; i++) {
+                    hiddenElements[i].value = this.visitor.profile.DeviceID;
+                }
+            }
+        }
+        if (this.pageParameters.impressionId) {
+            let hiddenElements = document.getElementsByName('rpiImpID');
+            for (let i = 0; i < hiddenElements.length; i++) {
+                hiddenElements[i].value = this.pageParameters.impressionId;
+            }
+        }
+        if (this.pageParameters.pendingEvents) {
+            for (let i = 0; i < this.pageParameters.pendingEvents.length; i++) {
+                let event = this.pageParameters.pendingEvents[i];
+                this.sendMetric(event["state"], event["stateValue"], event["extraParam"], event["contentID"], event["metadata"]);
+            }
+            this.pageParameters.pendingEvents = [];
+        }
+    }
+    sendMetric(state, stateValue, extraParam, contentID, metadata, callback) {
+        let url = this.getEventsUrl();
+        let eventDetails = this.getEventRequestDetails(state, stateValue, extraParam, contentID, metadata);
+        this.postRequestAsync(url, JSON.stringify(eventDetails), function (data) {
+            if (callback) {
+                callback.call(this, data);
+            }
+        }, undefined, this.shouldUseXhrCredentials());
+    }
+    sendLinkClickEvent(href, metadata) {
+        let url = this.getEventsUrl();
+        let browser = this.detectBrowser();
+        let eventDetails = this.getEventRequestDetails("PageLinkClick", null, href, null, metadata);
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(url, JSON.stringify(eventDetails));
+        }
+        else if (browser != "FIREFOX" && browser != "SAFARI" && browser != "OTHER") {
+            this.postRequestAsync(url, JSON.stringify(eventDetails), undefined, undefined, this.shouldUseXhrCredentials());
+        }
+        else {
+            let storageItem = this.getLocalStorageItem("PageLinkClick");
+            if (!storageItem) {
+                storageItem = [];
+            }
+            storageItem.push({ href: href, metadata: metadata });
+            this.setLocalStorageItem("PageLinkClick", storageItem);
+        }
+    }
+    getEventRequestDetails(state, stateValue, extraParam, contentID, metadata) {
+        let eventDetails = {};
+        eventDetails["EventName"] = state;
+        if (this.pageParameters.exId > 0) {
+            eventDetails["ChannelExecutionID"] = this.pageParameters.exId;
+        }
+        if (this.pageParameters.cId) {
+            eventDetails["RPContactID"] = this.pageParameters.cId;
+        }
+        if (stateValue) {
+            eventDetails["MetricValue"] = stateValue;
+        }
+        if (extraParam) {
+            eventDetails["EventDetail"] = extraParam;
+        }
+        let publishId = "0";
+        if (this.pageParameters.pagePublishId) {
+            publishId = this.pageParameters.pagePublishId;
+        }
+        eventDetails["PagePublishedID"] = publishId;
+        if (this.visitor.profile.VisitorID) {
+            eventDetails["VisitorID"] = this.visitor.profile.VisitorID;
+            eventDetails["DeviceID"] = this.visitor.profile.DeviceID;
+        }
+        if (this.pageParameters.impressionId)
+            eventDetails["ImpressionID"] = this.pageParameters.impressionId;
+        if (this.config.clientId) {
+            eventDetails["ClientID"] = this.config.clientId;
+        }
+        if (contentID) {
+            eventDetails["ContentID"] = contentID;
+        }
+        if (state == 'PageVisit') {
+            if (this.pageParameters.exId > 0) {
+                eventDetails["PageReferral"] = "exid" + this.pageParameters.exId;
+            }
+            else {
+                let referrer = document.referrer;
+                if (referrer) {
+                    eventDetails["PageReferral"] = referrer;
+                }
+                else {
+                    eventDetails["PageReferral"] = "Direct";
+                }
+            }
+        }
+        if (this.location.raw) {
+            eventDetails["RequestURL"] = this.location.raw;
+        }
+        if (this.pageParameters.goals && this.pageParameters.goals.length > 0) {
+            let goalDetail = {};
+            for (let goal of this.pageParameters.goals) {
+                if (goal["state"] && goal["state"].toLowerCase() == state.toLowerCase()) {
+                    if (goal["detail"]) {
+                        goalDetail["GoalContentID"] = goal["content"];
+                        if (goal["name"]) {
+                            goalDetail["GoalName"] = goal["name"];
+                        }
+                        eventDetails["GoalDetails"] = goalDetail;
+                    }
+                    else if (extraParam && extraParam.toLowerCase().indexOf(goal["detail"].toLowerCase()) >= 0) {
+                        goalDetail["GoalContentID"] = goal["content"];
+                        if (goal["name"]) {
+                            goalDetail["GoalName"] = goal["name"];
+                        }
+                        eventDetails["GoalDetails"] = goalDetail;
+                    }
+                }
+            }
+        }
+        if (metadata && metadata.length > 0) {
+            eventDetails["Metadata"] = metadata;
+        }
+        return eventDetails;
+    }
+    renderDecisionContent(result, elementId, lookupRequest) {
+        if (!elementId) {
+            elementId = this.getElementId(result);
+        }
+        let element = this.getDomElement(elementId);
+        if (!element) {
+            this.log("Unable to find DOM element with ID: " + elementId, "WARN");
+            return;
+        }
+        let decisionMeta = {
+            ContentName: result.ContentName,
+            ResultID: result.ResultID,
+            ContentID: result.ContentID,
+            Result: result.Result,
+            ContentFormat: result.ContentFormat,
+            DefaultKey: result.DefaultKey,
+            DivName: result.DivName,
+            IsEmptyResult: result.IsEmptyResult,
+            PluginTag: result.PluginTag,
+            PluginTagDefault: result.PluginTagDefault,
+            ContextName: result.ContextName,
+            SlotName: result.SlotName,
+            DecisionType: result.DecisionType
+        };
+        element.setAttribute("rg-decision-meta", JSON.stringify(decisionMeta));
+        this.getDecisionContent(result, function (content) {
+            if (element) {
+                if (result.ContentFormat == "HTML") {
+                    element.innerHTML = "";
+                    let elements = this.parseHtml(content);
+                    for (let i = 0; i < elements.length; i++) {
+                        element.appendChild(elements[i]);
+                    }
+                }
+                else {
+                    element.innerHTML = content;
+                }
+                let enableLinkTracking = false;
+                let enableCrossDomainTracking = false;
+                if (this.config.enableClickTracking != undefined) {
+                    enableLinkTracking = this.config.enableClickTracking;
+                }
+                if (this.config.enableCrossDomainTracking != undefined) {
+                    enableCrossDomainTracking = this.config.enableCrossDomainTracking;
+                }
+                if (result.ResultID) {
+                    let anchors = element.getElementsByTagName("a");
+                    for (let i = 0; i < anchors.length; i++) {
+                        let anchor = anchors[i];
+                        this.setElementData(anchor, "resultId", result.ResultID);
+                        if (enableLinkTracking) {
+                            this.attachClickEventHandler(anchor);
+                        }
+                        if (enableCrossDomainTracking) {
+                            this.appendCrossDomainTrackingDetails(anchor);
+                        }
+                    }
+                }
+            }
+        }, lookupRequest);
+    }
+    getElementId(result) {
+        if (result.ContextTag) {
+            return result.ContextTag;
+        }
+        if (result.SlotName) {
+            return result.SlotName;
+        }
+        return result.DivName;
+    }
+    getDomElement(elementId) {
+        let nodes = document.querySelectorAll("[rg-content-slot='" + elementId + "']");
+        if (nodes && nodes.length) {
+            return nodes[0];
+        }
+        let node = document.getElementById(elementId);
+        if (node) {
+            return node;
+        }
+        let elements = document.getElementsByClassName(elementId);
+        if (elements && elements.length) {
+            return elements[0];
+        }
+        return null;
+    }
+    parseHtml(content) {
+        let elements = [];
+        let body = document.createElement("body");
+        body.innerHTML = content;
+        for (let i = 0; i < body.children.length; i++) {
+            let child = body.children[i];
+            if (child.nodeName == "SCRIPT") {
+                let script = document.createElement("script");
+                for (let i in child.attributes) {
+                    let attrib = child.attributes[i];
+                    script.setAttribute(attrib.name, attrib.value);
+                }
+                script.innerHTML = child.innerHTML;
+                elements.push(script);
+            }
+            else {
+                elements.push(child);
+            }
+        }
+        return elements;
+    }
+    getDecisionContent(result, callback, lookupRequest) {
+        if (result.IsEmptyResult || result.Result == "0") {
+            return;
+        }
+        let self = this;
+        if (result.IsCachedContent) {
+            callback.call(self, result.ResultContent);
+            return;
+        }
+        this.requestAsync(result.ContentPath, function (data) {
+            callback.call(this, data);
+            if (lookupRequest && data.indexOf("-RPIEMBA-") >= 0) {
+                this.renderLookupAttributes(lookupRequest);
+            }
+        }, undefined, this.shouldUseXhrCredentials());
+    }
+    pushRealtimeParameter(name, value, isListParam, listOperator) {
+        this.log("Pushing name: " + name + ", value: " + value + " to realtimeParameters...", "INFO");
+        if (isListParam == undefined) {
+            if (this.config.realtimeListParameters && this.config.realtimeListParameters.find(element => element.toLowerCase() == name)) {
+                isListParam = true;
+            }
+        }
+        if (isListParam) {
+            let valueList = value.split(",");
+            if (!listOperator) {
+                listOperator = "PushToArray";
+            }
+            this.realtimeParameters.push({ Name: name, ValueList: valueList, UpdateOperator: listOperator });
+        }
+        else {
+            this.realtimeParameters.push({ Name: name, Value: value });
+        }
+    }
+    flushRealtimeParameters(callback) {
+        this.log("Pushing realtimeParameters to visitor profile: " + JSON.stringify(this.realtimeParameters), "INFO");
+        if (this.pageParameters.geolocation) {
+            this.submitVisitorRequestAsync(true, callback);
+        }
+        else if (this.realtimeParameters && this.realtimeParameters.length) {
+            let url = this.getCacheParametersUrl();
+            this.postRequestAsync(url, JSON.stringify(this.getCacheParametersRequest()), function (data) {
+                this.parseVisitorResponse(data, true);
+                if (callback) {
+                    callback.call(this, data);
+                }
+            }, undefined, this.shouldUseXhrCredentials());
+            this.realtimeParameters = [];
+        }
+    }
+    requestAsync(url, onSuccess, onError, withCredentials) {
+        this.log("Performing async GET request to " + url, "INFO");
+        if (!withCredentials) {
+            withCredentials = false;
+        }
+        let xmlHttp = this.getXhr(withCredentials);
+        let self = this;
+        xmlHttp.onreadystatechange = function () {
+            if (this.readyState === 4) {
+                if (this.status === 200 && typeof onSuccess == 'function') {
+                    onSuccess.call(self, this.responseText);
+                }
+                else if (typeof onError == 'function') {
+                    self.log("Error performing async GET:" + this.statusText, "ERROR");
+                    onError.call(self, this.responseText);
+                }
+            }
+        };
+        xmlHttp.open("GET", url, true);
+        xmlHttp.send();
+    }
+    postRequestAsync(url, contents, onSuccess, onError, withCredentials) {
+        this.log("Performing async POST request to: " + url + " with contents: " + contents, "INFO");
+        if (!withCredentials) {
+            withCredentials = false;
+        }
+        let xmlHttp = this.getXhr(withCredentials);
+        let self = this;
+        xmlHttp.onreadystatechange = function () {
+            if (this.readyState === 4) {
+                if (this.status === 200 || this.status === 204) {
+                    if (onSuccess) {
+                        onSuccess.call(self, this.responseText);
+                    }
+                }
+                else if (onError) {
+                    self.log("Error performing async POST:" + this.statusText, "ERROR");
+                    onError.call(self, this.responseText);
+                }
+            }
+        };
+        xmlHttp.open("POST", url, true);
+        xmlHttp.setRequestHeader("Accept", "application/json");
+        xmlHttp.setRequestHeader("Content-type", "text/plain");
+        xmlHttp.send(contents);
+    }
+    getCookie(cookieName) {
+        let cookies = document.cookie.split(";");
+        for (let cookie of cookies) {
+            let name = cookie.substring(0, cookie.indexOf("="));
+            let value = cookie.substring(cookie.indexOf("=") + 1);
+            name = name.replace(/^\s+|\s+$/g, "");
+            if (name == cookieName) {
+                return decodeURIComponent(value);
+            }
+        }
+        return null;
+    }
+    setCookie(cookieName, cookieValue, days, domain, sameSite, secure, expiry) {
+        if (!expiry) {
+            expiry = new Date();
+            if (days) {
+                expiry.setDate(expiry.getDate() + days);
+            }
+        }
+        let value = cookieName + "=" + encodeURIComponent(cookieValue)
+            + ((!expiry) ? "" : "; Expires=" + expiry.toUTCString())
+            + ((!domain) ? "" : "; Domain=" + domain)
+            + ((!sameSite) ? "; SameSite=Lax" : "; SameSite=" + sameSite)
+            + ((!secure) ? "" : "; Secure")
+            + "; Path=/";
+        this.log("setting cookie: " + value, "INFO");
+        document.cookie = value;
+    }
+    getVisitorCookie() {
+        let visitorCookie = { profile: { VisitorID: "", IsMasterKey: false, HasAlternativeKey: false, Keys: [] }, geolocationExpiry: 0 };
+        if (this.config.enableCrossDomainTracking) {
+            let visitorId = this.location.searchParts["rprtvid"];
+            let deviceId = this.location.searchParts["rprtdid"];
+            if (visitorId) {
+                visitorCookie.profile.VisitorID = visitorId;
+                visitorCookie.profile.DeviceID = deviceId;
+                return visitorCookie;
+            }
+        }
+        let cookie = this.getCookie(this.config.clientId);
+        if (cookie) {
+            try {
+                let json = JSON.parse(cookie);
+                if (typeof (json) == "object") {
+                    if (json.profile) {
+                        return json;
+                    }
+                    else {
+                        this.log("Expected VisitorCookie, got: " + cookie, "ERROR");
+                    }
+                }
+                else {
+                    this.log("Expected VisitorCookie of type object, got: " + typeof (json), "WARN");
+                }
+            }
+            catch (e) {
+                this.log("Converting cookie for visitor ID: " + cookie, "LOG");
+            }
+        }
+        visitorCookie.profile.VisitorID = this.getUuid();
+        visitorCookie.profile.DeviceID = this.getUuid();
+        return visitorCookie;
+    }
+    setVisitorCookie(apiVisitor) {
+        if (!this.doNotTrack && this.config.clientId) {
+            let visitorSet = false;
+            let visitorChanged = false;
+            if (!apiVisitor) {
+                apiVisitor = this.visitor.profile;
+            }
+            if (!this.visitor.profile.VisitorID) {
+                visitorSet = true;
+            }
+            else if (this.visitor.profile.VisitorID != apiVisitor.VisitorID) {
+                visitorChanged = true;
+            }
+            this.visitor.profile = apiVisitor;
+            let days = this.config.visitorCookieDuration;
+            if (!days) {
+                days = 365;
+            }
+            this.setCookie(this.config.clientId, JSON.stringify(this.visitor), days, this.config.realtimeCookieDomain, this.config.realtimeCookieSameSite, true);
+            if (visitorSet) {
+                this.publishEvent(this.VISITOR_SET_EVENT, this.visitor);
+            }
+            else if (visitorChanged) {
+                this.publishEvent(this.VISITOR_CHANGE_EVENT, this.visitor);
+            }
+        }
+    }
+    parseVisitorResponse(data, storeVisitorId) {
+        if (data) {
+            let result = JSON.parse(data);
+            return this.parseVisitor(result, storeVisitorId);
+        }
+        else {
+            return null;
+        }
+    }
+    parseVisitor(visitor, storeVisitorId) {
+        if (storeVisitorId == undefined) {
+            storeVisitorId = true;
+        }
+        if (storeVisitorId)
+            this.setVisitorCookie(visitor);
+        if (visitor.ImpressionID != undefined)
+            this.pageParameters.impressionId = visitor.ImpressionID;
+        return visitor;
+    }
+    setGeolocationExpiry() {
+        if (this.config.clientId) {
+            let expiryDays = 5;
+            if (this.config.geolocationCookieDuration) {
+                expiryDays = this.config.geolocationCookieDuration;
+            }
+            let today = new Date();
+            let expiry = new Date(today.toString());
+            expiry.setDate(expiry.getDate() + expiryDays);
+            this.visitor.geolocationExpiry = expiry.valueOf();
+            this.setVisitorCookie();
+        }
+    }
+    getApiServer() {
+        if (this.config.serverUrl) {
+            if (this.config.serverUrl.indexOf("http") == 0) {
+                return this.config.serverUrl;
+            }
+            else {
+                return (("https:" == document.location.protocol) ? "https://" + this.config.serverUrl : "http://" + this.config.serverUrl);
+            }
+        }
+        return "";
+    }
+    getCacheVisitUrl() {
+        let serverUrl = this.getApiServer();
+        return serverUrl + "/api/Cache/Visit";
+    }
+    getCacheParametersUrl(isGetRequest) {
+        let serverUrl = this.getApiServer();
+        if (isGetRequest) {
+            return serverUrl + "/api/Cache/" + this.config.clientId + "/Parameters?visitorID=" + this.visitor.profile.VisitorID;
+        }
+        return serverUrl + "/api/Cache/" + this.config.clientId + "/Parameters";
+    }
+    getCacheVisitorsAttributesUrl() {
+        let serverUrl = this.getApiServer();
+        return serverUrl + "/api/Cache/Visitors/Attributes/" + this.visitor.profile.VisitorID;
+    }
+    getCacheCachedAttributesUrl() {
+        let serverUrl = this.getApiServer();
+        return serverUrl + "/api/Cache/CachedAttributes";
+    }
+    getEventsUrl() {
+        let serverUrl = this.getApiServer();
+        return serverUrl + '/api/Events';
+    }
+    getVisitorViewUrl(viewName) {
+        let serverUrl = this.getApiServer();
+        return serverUrl + "/api/Cache/Visitors/" + this.config.clientId + "/Views/" + viewName;
+    }
+    getDecisionsSmartAssetsUrl() {
+        let serverUrl = this.getApiServer();
+        return serverUrl + "/api/SmartAssets/" + this.config.clientId + "/Results";
+    }
+    shouldUseXhrCredentials() {
+        if (!this.config.serverCookieEnabled) {
+            return false;
+        }
+        return true;
+    }
+    getXhr(withCredentials) {
+        let xmlHttp;
+        try {
+            xmlHttp = new XMLHttpRequest();
+        }
+        catch (e) {
+            try {
+                xmlHttp = new ActiveXObject("Msxml2.XMLHTTP");
+            }
+            catch (e) {
+                xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+        }
+        if (!xmlHttp) {
+            return false;
+        }
+        xmlHttp.withCredentials = withCredentials;
+        return xmlHttp;
+    }
+    _setFormTracking() {
+        if (this.pageParameters.cId) {
+            let hiddenElements = document.getElementsByName('rpiCID');
+            for (let i = 0; i < hiddenElements.length; i++) {
+                hiddenElements[i].value = this.pageParameters.cId;
+            }
+        }
+        if (this.pageParameters.exId > 0) {
+            let hiddenElements = document.getElementsByName('rpiExID');
+            for (let i = 0; i < hiddenElements.length; i++) {
+                hiddenElements[i].value = this.pageParameters.exId.toString();
+            }
+        }
+        if (this.visitor.profile.VisitorID) {
+            let hiddenElements = document.getElementsByName('rpiVisitorID');
+            for (let i = 0; i < hiddenElements.length; i++) {
+                hiddenElements[i].value = this.visitor.profile.VisitorID;
+            }
+        }
+        if (this.visitor.profile.DeviceID) {
+            let hiddenElements = document.getElementsByName('rpiDeviceID');
+            for (let i = 0; i < hiddenElements.length; i++) {
+                hiddenElements[i].value = this.visitor.profile.DeviceID;
+            }
+        }
+    }
+    _submitCacheDBData(lookupId, lookupValue, lookupOnName, callback) {
+        if (this.visitor.profile.VisitorID) {
+            let content = {};
+            content["VisitorID"] = this.visitor.profile.VisitorID;
+            if (this.visitor.profile.DeviceID) {
+                content["DeviceID"] = this.visitor.profile.DeviceID;
+            }
+            if (lookupOnName) {
+                content["CachedAttributeName"] = lookupId;
+            }
+            else {
+                content["CachedAttributeName"] = "";
+                content["CachedAttributeListID"] = lookupId;
+            }
+            content["LookupValue"] = lookupValue;
+            this.postRequestAsync(this.getCacheCachedAttributesUrl(), JSON.stringify(content), function (data) {
+                this.parseVisitorResponse(data, true);
+                if (callback) {
+                    callback.call(this, data);
+                }
+            }, undefined, this.shouldUseXhrCredentials());
+        }
+    }
+    _cacheDBData(lookupId, lookupValue) {
+        if (this.visitor.profile.VisitorID) {
+            this._submitCacheDBData(lookupId, lookupValue, false);
+        }
+        else {
+            this.log("Unable to cache DB data, visitor not set", "WARN");
+        }
+    }
+    _pushPageGoal(goalName, stateName, goalDetail, contentIds) {
+        let goal = {
+            name: goalName,
+            state: stateName,
+            detail: goalDetail,
+            content: contentIds
+        };
+        if (!this.pageParameters.goals) {
+            this.pageParameters.goals = [];
+        }
+        this.pageParameters.goals.push(goal);
+    }
+    _submitFBParams(FB, edges, reload) {
+        let batchArray = [];
+        batchArray[0] = { method: "GET", relative_url: "me" };
+        for (let i = 0; i < edges.length; i++) {
+            batchArray[i + 1] = { method: "GET", relative_url: "me/" + edges[i] };
+        }
+        let self = this;
+        FB.api('/', 'POST', {
+            batch: batchArray
+        }, function (responses) {
+            if (responses.length && responses[0].body) {
+                let response = JSON.parse(responses[0].body);
+                self.pushRealtimeParameter("Facebook_ID", response.id);
+                self.pushRealtimeParameter("Facebook_Name", response.name);
+                self.pushRealtimeParameter("Facebook_FirstName", response.first_name);
+                self.pushRealtimeParameter("Facebook_LastName", response.last_name);
+                self.pushRealtimeParameter("Facebook_Is_Logged_In", "true");
+                if (response.username) {
+                    self.pushRealtimeParameter("Facebook_username", response.username);
+                }
+                if (response.gender) {
+                    self.pushRealtimeParameter("Facebook_Gender", response.gender);
+                }
+                if (response.locale) {
+                    self.pushRealtimeParameter("Facebook_Locale", response.locale);
+                }
+                if (response.email) {
+                    self.pushRealtimeParameter("Facebook_Email", response.email);
+                }
+                if (response.birthday) {
+                    self.pushRealtimeParameter("Facebook_Birthday", response.birthday);
+                }
+                if (response.location) {
+                    self.pushRealtimeParameter("Facebook_Location", response.location.name);
+                }
+                if (response.hometown) {
+                    self.pushRealtimeParameter("Facebook_Hometown", response.hometown.name);
+                }
+            }
+            for (let i = 0; i < edges.length; i++) {
+                if (responses.length >= i + 2 && responses[0].body && responses[i + 1].body) {
+                    let response = JSON.parse(responses[i + 1].body);
+                    if (response.data) {
+                        let nameValues = '';
+                        for (let j = 0; j < response.data.length; j++) {
+                            if (response.data[j].name) {
+                                if (nameValues != '') {
+                                    nameValues = nameValues + '_';
+                                }
+                                nameValues = nameValues + response.data[j].name;
+                            }
+                        }
+                        if (nameValues) {
+                            if (edges[i] == 'likes') {
+                                self.pushRealtimeParameter("Facebook_Likes", nameValues);
+                            }
+                            else if (edges[i] == 'events') {
+                                self.pushRealtimeParameter("Facebook_Events", nameValues);
+                            }
+                            else {
+                                self.pushRealtimeParameter("Facebook_" + edges[i], nameValues);
+                            }
+                        }
+                    }
+                }
+            }
+            if (!self.realtimeParameters.length) {
+                self.pushRealtimeParameter("Facebook_Is_Logged_In", "false");
+            }
+            if (reload == true) {
+                self.submitVisitorDetails(function () { location.reload(); });
+            }
+            else {
+                self.submitVisitorDetails();
+            }
+        });
+    }
+}
+var rpiWebClient = new RpiWebClient();
