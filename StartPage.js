@@ -20,7 +20,7 @@ function search() {
 }
 
 function button_color() {
-	var color = document.getElementById('button1');
+	var color = document.getElementById('0');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -30,7 +30,7 @@ function button_color() {
 	
 }
 function button2_color() {
-	var color = document.getElementById('button2');
+	var color = document.getElementById('1');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 
@@ -43,7 +43,7 @@ function button2_color() {
 }
 
 function button3_color() {
-	var color = document.getElementById('button3');
+	var color = document.getElementById('2');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -54,7 +54,7 @@ function button3_color() {
 }
 
 function button4_color() {
-	var color = document.getElementById('button4');
+	var color = document.getElementById('3');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -65,7 +65,7 @@ function button4_color() {
 }
 
 function button5_color() {
-	var color = document.getElementById('button5');
+	var color = document.getElementById('4');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -75,7 +75,7 @@ function button5_color() {
 	
 }
 function button6_color() {
-	var color = document.getElementById('button6');
+	var color = document.getElementById('5');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -86,7 +86,7 @@ function button6_color() {
 }
 
 function button7_color() {
-	var color = document.getElementById('button7');
+	var color = document.getElementById('6');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -97,7 +97,7 @@ function button7_color() {
 }
 
 function button8_color() {
-	var color = document.getElementById('button8');
+	var color = document.getElementById('7');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -108,7 +108,7 @@ function button8_color() {
 }
 
 function button9_color() {
-	var color = document.getElementById('button9');
+	var color = document.getElementById('8');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -119,7 +119,7 @@ function button9_color() {
 }
 
 function button10_color() {
-	var color = document.getElementById('button10');
+	var color = document.getElementById('9');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -130,7 +130,7 @@ function button10_color() {
 }
 
 function button11_color() {
-	var color = document.getElementById('button11');
+	var color = document.getElementById('10');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -141,7 +141,7 @@ function button11_color() {
 }
 
 function button12_color() {
-	var color = document.getElementById('button12');
+	var color = document.getElementById('11');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -152,7 +152,7 @@ function button12_color() {
 }
 
 function button13_color() {
-	var color = document.getElementById('button13');
+	var color = document.getElementById('12');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -163,7 +163,7 @@ function button13_color() {
 }
 
 function button14_color() {
-	var color = document.getElementById('button14');
+	var color = document.getElementById('13');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -174,7 +174,7 @@ function button14_color() {
 }
 
 function button15_color() {
-	var color = document.getElementById('button15');
+	var color = document.getElementById('14');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -184,7 +184,7 @@ function button15_color() {
 	
 }
 function button16_color() {
-	var color = document.getElementById('button16');
+	var color = document.getElementById('15');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -195,7 +195,7 @@ function button16_color() {
 }
 
 function button17_color() {
-	var color = document.getElementById('button17');
+	var color = document.getElementById('16');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -206,7 +206,7 @@ function button17_color() {
 }
 
 function button18_color() {
-	var color = document.getElementById('button18');
+	var color = document.getElementById('17');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -217,7 +217,7 @@ function button18_color() {
 }
 
 function button19_color() {
-	var color = document.getElementById('button19');
+	var color = document.getElementById('18');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -228,7 +228,7 @@ function button19_color() {
 }
 
 function button20_color() {
-	var color = document.getElementById('button20');
+	var color = document.getElementById('19');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -239,7 +239,7 @@ function button20_color() {
 }
 
 function button21_color() {
-	var color = document.getElementById('button21');
+	var color = document.getElementById('20');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
@@ -250,7 +250,7 @@ function button21_color() {
 }
 
 function button22_color() {
-	var color = document.getElementById('button22');
+	var color = document.getElementById('21');
 	if(color.style.backgroundColor == "white"){
 		color.style.backgroundColor = "orange";
 	}
